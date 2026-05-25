@@ -1,0 +1,26 @@
+# Core
+pandas>=2.0
+openpyxl>=3.1
+requests>=2.31
+pyyaml>=6.0
+tqdm>=4.66
+
+# PDF processing
+pymupdf>=1.23          # fitz — fast PDF to image rendering
+
+# Image processing
+Pillow>=10.0
+numpy>=1.24
+
+# YOLO / DocLayout
+# Install separately via: pip install doclayout-yolo
+# or: pip install git+https://github.com/opendatalab/DocLayout-YOLO.git
+torch>=2.1
+torchvision>=0.16
+
+# DINOv2 (Phase 4 - future)
+# transformers>=4.35
+
+# Notebook review UI
+ipywidgets>=8.0
+ipython>=8.0
