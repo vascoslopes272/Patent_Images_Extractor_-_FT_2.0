@@ -12,12 +12,11 @@ Run all phases or specific ones from the terminal:
 """
 
 import argparse
-import yaml
 import json
 from pathlib import Path
+from src.config_loader import load_config
 from src.patents import load_patents, get_subset
-from src.downloader import download_pdfs
-from src.extractor import extract_crops
+from src.extractor import extract_crops_streaming
 from src.processor import process_crops
 
 
@@ -28,10 +27,9 @@ def run(cfg: dict, phases: list[int]):
 
     if 1 in phases:
         print("\n=== PHASE 1: Download + Extract ===")
-        df     = load_patents(cfg)
-        subset = get_subset(df, cfg)
-        pdf_paths    = download_pdfs(subset, cfg)
-        crop_results = extract_crops(pdf_paths, cfg)
+        df, missing_df = load_patents(cfg)
+        subset         = get_subset(df, cfg)
+        crop_results   = extract_crops_streaming(subset, cfg, no_url_df=missing_df)
         # Save crop index
         crop_index = {k: [str(p) for p in v] for k, v in crop_results.items()}
         with open(crop_index_path, "w") as f:
@@ -57,8 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--n", type=int, default=None)
     args = parser.parse_args()
 
-    with open("config.yaml") as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_config()
 
     # Allow CLI override of subset mode
     if args.subset:

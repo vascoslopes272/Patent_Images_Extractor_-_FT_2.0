@@ -4,18 +4,17 @@
 
 # ── Paths (all local, not committed to git) ──
 paths:
-  excel: "/home/vasco/data/patents/1629__dataset_22_05_26.xlsx"   # your Excel
-  pdfs:  "/home/vasco/data/patents/pdfs"                          # downloaded PDFs
-  crops: "/home/vasco/data/patents/crops"                         # YOLO output
-  processed: "/home/vasco/data/patents/processed"                 # resized + padded
-  reviewed:  "/home/vasco/data/patents/reviewed"                  # human-approved
-  logs:      "/home/vasco/data/patents/logs"
+  excel: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1627__dataset_26_05_26.xlsx"
+  crops: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Raw_Crops"                         # YOLO output
+  processed: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Processed"                 # resized + padded
+  reviewed:  "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_reviewed"                  # human-approved
+  logs:      "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_logs"
 
 # ── Subset Selection ──
 # mode options: "all" | "n_first" | "filter"
 subset:
-  mode: "n_first"           # change this to switch what gets processed
-  n_first: 90               # used when mode = "n_first"
+  mode: "all"           # change this to switch what gets processed
+  n_first: 5               # used when mode = "n_first"
   filters:                  # used when mode = "filter"
     record_type: null        # e.g. "Patent" | null = no filter
     legal_status: "ALIVE"    # "ALIVE" | "DEAD" | null
@@ -23,27 +22,28 @@ subset:
 
 # ── Download Settings ──
 downloader:
-  timeout_seconds: 30
+  timeout_seconds: 120
   retry_attempts: 3
   delay_between_requests: 1.0   # seconds, be polite to patseer API
 
 # ── YOLO / DocLayout Settings ──
 extractor:
-  model_path: "doclayout_yolo"   # path or model name for DocLayout-YOLO
-  device: "cuda:0"               # "cuda:0" | "cuda:1" | "cpu"
+  model_path: "models/doclayout_yolo_docstructbench_imgsz1024.pt"  # relative to pipeline/
+  device: "cuda:1"               # "cuda:0" | "cuda:1" | "cpu"
   confidence_threshold: 0.3
   target_classes:                # DocLayout-YOLO class names to keep
     - "figure"
     - "table"                    # remove if you only want figures
   pdf_dpi: 150                   # DPI to render PDF pages (150 = good quality + fast)
   batch_size: 1                  # pages processed at once; increase if GPU memory allows
+  save_format: "PNG"            # "JPEG" (smaller, universal) or "PNG" (lossless)
 
 # ── Image Processing (Phase 2) ──
 processor:
   target_size: 224              # DINOv2 input size
   padding_color: [255, 255, 255] # white padding
   min_crop_pixels: 50           # discard crops smaller than this (px width or height)
-  save_format: "PNG"
+  save_format: "PNG"            # must match extractor.save_format
 
 # ── Image Naming Convention ──
 # final name: {record_number}_p{page:03d}_c{crop:02d}.png

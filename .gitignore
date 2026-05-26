@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Data directories — large files, never commit
+/home/vasco/data/patents/
+
+# Staging folder for old files pending deletion
+_to_delete/
+models/
