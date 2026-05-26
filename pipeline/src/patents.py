@@ -106,6 +106,13 @@ def get_subset(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                   legal_status     e.g. "ALIVE"  (exact match)
                   tech_sub_domain  e.g. "TRANSPORT" (partial match — a row with
                                    "TRANSPORT, CONTROL" would be included)
+                  cpc_first        list of CPC codes — keeps only rows whose FIRST
+                                   CPC code matches one of these exactly (the CPC
+                                   column stores codes separated by " | ")
+
+    "selected" → keep only the patents manually flagged in the selector UI.
+                 Reads logs/selected_patents.json (written by 01_patent_selector.ipynb).
+                 Run 01_patent_selector.ipynb first; then set mode: "selected" here.
 
     RETURNS: a new DataFrame (copy), rows reset to 0-based index.
     """
@@ -141,8 +148,34 @@ def get_subset(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                 .str.contains(filters["tech_sub_domain"], na=False)
             ]
 
+        if filters.get("cpc_first"):
+            # Keep only rows where the FIRST CPC code matches one of the listed values.
+            # The CPC column stores codes separated by " | "; we compare only the first one.
+            allowed = [c.strip() for c in filters["cpc_first"]]
+            first_cpc = df["CPC"].fillna("").str.split(r"\s*\|\s*", n=1).str[0].str.strip()
+            subset = subset[first_cpc.isin(allowed)]
+
+    elif mode == "selected":
+        import json
+        sel_path = Path(cfg["paths"]["logs"]) / "selected_patents.json"
+        if not sel_path.exists():
+            raise FileNotFoundError(
+                f"selected_patents.json not found at {sel_path}.\n"
+                "Run 01_patent_selector.ipynb first and mark the patents you want."
+            )
+        with open(sel_path) as f:
+            data = json.load(f)
+        selected_ids = {
+            str(pid).strip().upper()
+            for pid, v in data.get("patents", {}).items()
+            if v.get("selected")
+        }
+        subset = df[df["Record Number"].apply(
+            lambda x: str(x).strip().upper() in selected_ids
+        )].copy()
+
     else:
-        raise ValueError(f"Unknown subset mode: '{mode}'. Use 'all', 'n_first', or 'filter'.")
+        raise ValueError(f"Unknown subset mode: '{mode}'. Use 'all', 'n_first', 'filter', or 'selected'.")
 
     subset = subset.reset_index(drop=True)
     print(f"  Subset mode='{mode}': {len(subset)} patents selected.")

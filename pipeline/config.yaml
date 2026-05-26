@@ -9,16 +9,24 @@ paths:
   processed: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Processed"                 # resized + padded
   reviewed:  "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_reviewed"                  # human-approved
   logs:      "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_logs"
+  final:     "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Reviewed_and_Processed"  # final output for training
+  # review_meta.json lives in logs/ — written by Phase 2 (Review), read by Phase 2.5 and Phase 3
+  # Derived automatically in code as logs/review_meta.json; no separate entry needed.
 
 # ── Subset Selection ──
-# mode options: "all" | "n_first" | "filter"
+# mode options: "all" | "n_first" | "filter" | "selected"
+#   "selected" → reads logs/selected_patents.json (written by patent_viewer.ipynb)
 subset:
-  mode: "all"           # change this to switch what gets processed
-  n_first: 5               # used when mode = "n_first"
+  mode: "filter"        # change this to switch what gets processed
+  n_first: 10              # used when mode = "n_first"
   filters:                  # used when mode = "filter"
     record_type: null        # e.g. "Patent" | null = no filter
-    legal_status: "ALIVE"    # "ALIVE" | "DEAD" | null
+    legal_status: null       # "ALIVE" | "DEAD" | null
     tech_sub_domain: null    # e.g. "TRANSPORT" | null
+    cpc_first:               # keep only rows whose FIRST CPC code matches one of these
+      - "B64C29/0041"
+      - "B64C29/0083"
+      - "B64C29/016"
 
 # ── Download Settings ──
 downloader:
@@ -44,6 +52,15 @@ processor:
   padding_color: [255, 255, 255] # white padding
   min_crop_pixels: 50           # discard crops smaller than this (px width or height)
   save_format: "PNG"            # must match extractor.save_format
+
+# ── Review UI (Phase 2) ──
+reviewer:
+  thumbnail_max_px: 400       # longest side for in-notebook preview thumbnails
+
+# ── Sub-crop Splitting (Phase 2.5) ──
+subcropper:
+  min_seam_depth_px: 30       # how far below mean intensity a valley must be
+  min_seam_span: 0.85         # seam must span >= 85% of perpendicular dimension
 
 # ── Image Naming Convention ──
 # final name: {record_number}_p{page:03d}_c{crop:02d}.png
