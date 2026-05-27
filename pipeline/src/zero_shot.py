@@ -268,6 +268,7 @@ def hdbscan_cluster(
     patent_ids: list[str],
     min_cluster_size: int = 5,
     min_samples: int | None = None,
+    cluster_selection_method: str = "leaf",
 ) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Cluster PCA-reduced embeddings with HDBSCAN.
@@ -281,10 +282,11 @@ def hdbscan_cluster(
 
     Parameters
     ----------
-    X_pca            : (N, d) PCA-reduced, L2-normalised embeddings
-    patent_ids       : list of patent IDs aligned with X_pca rows
-    min_cluster_size : smallest cluster HDBSCAN will recognise (try 4–8 for 84 images)
-    min_samples      : controls noise sensitivity; defaults to min_cluster_size
+    X_pca                    : (N, d) PCA-reduced, L2-normalised embeddings
+    patent_ids               : list of patent IDs aligned with X_pca rows
+    min_cluster_size         : smallest cluster HDBSCAN will recognise (try 4–8 for 84 images)
+    min_samples              : controls noise sensitivity; lower = fewer noise points
+    cluster_selection_method : "leaf" (tight clusters, good for binary) or "eom" (default HDBSCAN)
 
     Returns
     -------
@@ -295,14 +297,15 @@ def hdbscan_cluster(
         min_cluster_size=min_cluster_size,
         min_samples=min_samples,
         metric="euclidean",
-        cluster_selection_method="eom",
+        cluster_selection_method=cluster_selection_method,
     )
     labels = clusterer.fit_predict(X_pca)
     probs  = clusterer.probabilities_
 
     n_clusters = len(set(labels) - {-1})
     n_noise    = int(np.sum(labels == -1))
-    print(f"HDBSCAN (min_cluster_size={min_cluster_size}): "
+    print(f"HDBSCAN (min_cluster_size={min_cluster_size}, min_samples={min_samples}, "
+          f"method={cluster_selection_method}): "
           f"{n_clusters} cluster(s), {n_noise} noise point(s) / {len(labels)} total")
 
     if n_clusters >= 2:
