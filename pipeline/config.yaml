@@ -58,6 +58,7 @@ processor:
   padding_color: [255, 255, 255] # white padding
   min_crop_pixels: 50           # discard crops smaller than this (px width or height)
   save_format: "PNG"            # must match extractor.save_format
+  padding_mode: "legacy"        # "legacy" → white padding | "adaptive" → background-aware
   main_image_only: false        # true → only the image marked "Set as Main" per patent
   force_reprocess: false        # true → delete processed/ cache and rerun from scratch
 
