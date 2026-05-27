@@ -164,13 +164,13 @@ def process_crops(crop_paths: list, cfg: dict) -> list:
 # Organize processed images into the final folder with CPC codes in filenames
 # ---------------------------------------------------------------------------
 
-def _build_cpc_map(cfg: dict) -> dict:
-    """
-    Read the PatSeer Excel and return {record_id: cpc_first_sanitized}.
+_CAT_ABBR = {"shrouded": "SHR", "open_rotor": "OPN"}
 
-    The CPC column contains codes separated by ' | ' (e.g. 'B64C29/0041 | B60L50/60').
-    We take only the first code and strip '/' so it is filename-safe.
-    Patents with no CPC entry get the placeholder 'NOCPC'.
+
+def _build_cpc_map(cfg: dict) -> dict:
+    """Return {record_id: cpc_first_clean} from the PatSeer Excel.
+    Separator in the CPC column is ';' (not '|'). Removes all non-alphanumeric
+    characters so the result is filename-safe (e.g. 'B64C29/0033' → 'B64C290033').
     """
     excel_path = Path(cfg["paths"]["excel"])
     df = pd.read_excel(excel_path, dtype={"Record Number": str})
@@ -181,63 +181,72 @@ def _build_cpc_map(cfg: dict) -> dict:
         cpc_raw   = str(row.get("CPC", "") or "").strip()
         if not record_id:
             continue
-        first_cpc = cpc_raw.split("|")[0].strip() if cpc_raw else ""
-        # Remove all characters that are not alphanumeric → filename-safe
+        first_cpc = re.split(r"\s*;\s*", cpc_raw)[0].strip() if cpc_raw else ""
         cpc_clean = re.sub(r"[^A-Za-z0-9]", "", first_cpc) if first_cpc else "NOCPC"
         cpc_map[record_id] = cpc_clean
 
     return cpc_map
 
 
+def _build_category_map(cfg: dict) -> dict:
+    """Return {record_id: category} from selected_patents.csv in the experiment folder."""
+    csv_path = Path(cfg["paths"]["experiment"]) / "selected_patents.csv"
+    if not csv_path.exists():
+        return {}
+    df = pd.read_csv(csv_path, dtype={"Record Number": str})
+    return {str(r).strip().upper(): str(c).strip()
+            for r, c in zip(df["Record Number"], df["category"])}
+
+
 def organize_processed(cfg: dict) -> list:
     """
-    Copy every processed 224×224 image into the final/ folder, injecting the
-    patent's first CPC code into each filename.
+    Copy every processed 224×224 image into class subfolders under final/, with
+    category abbreviation and CPC code injected into each filename.
 
-    Input  (processed/):  {patent_id}/{patent_id}_p{page}_c{crop}.png
-    Output (final/):      {patent_id}/{patent_id}_{CPC}_p{page}_c{crop}.png
+    Output structure:
+        final/shrouded/   {id}_SHR_{CPC}_p{page:03d}_c{crop:02d}.png
+        final/open_rotor/ {id}_OPN_{CPC}_p{page:03d}_c{crop:02d}.png
 
-    Example:
-        processed/US2022267016A1/US2022267016A1_p001_c01.png
-        →  final/US2022267016A1/US2022267016A1_B64C290041_p001_c01.png
+    Examples:
+        US2022267016A1_SHR_B64C2720_p003_c01.png
+        US2022267016A1_OPN_B64C290033_p003_c01.png
 
-    CPC codes are read from the PatSeer Excel (paths.excel → 'CPC' column).
-    Patents missing from the Excel receive 'NOCPC' as placeholder.
-    Already-present files in final/ are skipped (safe to re-run).
-
-    RETURNS:
-        list of Path objects written to final/
+    Patents not in selected_patents.csv are placed in final/unlabelled/.
+    Already-present files are skipped (safe to re-run).
     """
     processed_dir = Path(cfg["paths"]["processed"])
     final_dir     = Path(cfg["paths"]["final"])
-    final_dir.mkdir(parents=True, exist_ok=True)
 
     print("Building CPC map from PatSeer Excel …")
     cpc_map = _build_cpc_map(cfg)
+    print("Loading categories from selected_patents.csv …")
+    cat_map = _build_category_map(cfg)
 
     output_paths = []
     patent_folders = sorted(processed_dir.iterdir()) if processed_dir.exists() else []
 
-    for patent_folder in tqdm(patent_folders, desc="Organizing final output"):
+    for patent_folder in tqdm(patent_folders, desc="Organising final output"):
         if not patent_folder.is_dir():
             continue
 
         patent_id = patent_folder.name
         cpc       = cpc_map.get(patent_id, "NOCPC")
-        out_dir   = final_dir / patent_id
+        category  = cat_map.get(patent_id.upper(), "unlabelled")
+        cat_abbr  = _CAT_ABBR.get(category, category.upper()[:3])
+
+        out_dir = final_dir / category
         out_dir.mkdir(parents=True, exist_ok=True)
 
         for img_path in sorted(patent_folder.glob("*.png")) + sorted(patent_folder.glob("*.jpg")):
-            # Insert CPC right after the patent ID prefix:
-            # "US2022267016A1_p001_c01.png" → "US2022267016A1_B64C290041_p001_c01.png"
-            stem = img_path.stem  # e.g. US2022267016A1_p001_c01
+            # Input:  US2022267016A1_p003_c01.png
+            # Output: US2022267016A1_SHR_B64C2720_p003_c01.png
+            stem   = img_path.stem    # e.g. US2022267016A1_p003_c01
             suffix = img_path.suffix
-            # Split on the first "_p" to isolate the patent ID from the page/crop part
-            parts = stem.split("_p", 1)
+            parts  = stem.split("_p", 1)
             if len(parts) == 2:
-                new_name = f"{parts[0]}_{cpc}_p{parts[1]}{suffix}"
+                new_name = f"{parts[0]}_{cat_abbr}_{cpc}_p{parts[1]}{suffix}"
             else:
-                new_name = f"{stem}_{cpc}{suffix}"
+                new_name = f"{stem}_{cat_abbr}_{cpc}{suffix}"
 
             dest = out_dir / new_name
             if dest.exists():
@@ -247,5 +256,11 @@ def organize_processed(cfg: dict) -> list:
             shutil.copy2(img_path, dest)
             output_paths.append(dest)
 
-    print(f"\nOrganize complete: {len(output_paths)} images in {final_dir}")
+    by_cat = {}
+    for p in output_paths:
+        by_cat.setdefault(p.parent.name, 0)
+        by_cat[p.parent.name] += 1
+    for cat, n in sorted(by_cat.items()):
+        print(f"  {cat}: {n} images")
+    print(f"Organise complete: {len(output_paths)} images in {final_dir}")
     return output_paths
