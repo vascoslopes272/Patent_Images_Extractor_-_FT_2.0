@@ -175,6 +175,14 @@ class ReviewUI:
                                     s["arch_selections"][pid_n][arch_slot].add(str(p))
                             break
 
+        # Patents not yet in review_meta.json start fully disapproved.
+        # The user clicks to approve, rather than clicking to disapprove.
+        seen_pids = {_N(pid) for pid in meta}
+        for pat in self._patents:
+            if _N(pat["patent_id"]) not in seen_pids:
+                for img_path in pat["images"]:
+                    s["rejected_images"].add(str(img_path))
+
         return s
 
     def _persist(self):

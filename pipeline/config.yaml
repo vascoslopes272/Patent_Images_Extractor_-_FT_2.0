@@ -5,13 +5,14 @@
 # ── Paths (all local, not committed to git) ──
 paths:
   excel: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1627__dataset_26_05_26.xlsx"
-  crops: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Raw_Crops"                         # YOLO output
-  processed: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Processed"                 # resized + padded
-  reviewed:  "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_reviewed"                  # human-approved
-  logs:      "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_logs"
-  final:     "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/2-Images_DataSets/1627/1627_Patents_Reviewed_and_Processed"  # final output for training
-  # review_meta.json lives in logs/ — written by Phase 2 (Review), read by Phase 2.5 and Phase 3
-  # Derived automatically in code as logs/review_meta.json; no separate entry needed.
+  crops: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_Raw_Crops"                         # YOLO output
+  processed: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_Processed"                 # resized + padded
+  reviewed:  "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_reviewed"                  # human-approved
+  logs:       "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_logs"
+  experiment: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/Shrouded vs Openrotor"
+  final:      "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/Shrouded vs Openrotor/Processed_Final"  # final output for training
+  # review_meta.json and review_export.xlsx are written to paths.experiment (not paths.logs)
+  # crop_index.json and extraction_status.xlsx stay in paths.logs (shared, all 1616 patents)
 
 # ── Subset Selection ──
 # mode options: "all" | "n_first" | "filter" | "selected"
@@ -23,11 +24,12 @@ subset:
     record_type: null        # e.g. "Patent" | null = no filter
     legal_status: null       # "ALIVE" | "DEAD" | null
     tech_sub_domain: null    # e.g. "TRANSPORT" | null
-    cpc_first:               # keep only rows whose FIRST CPC code matches one of these
-      - "B64C29/0033"
-      - "B64C29/0025"
-      - "B64C29/0008"
-      - "B64C29/02"
+    cpc_first:               # Shrouded vs Open Rotor experiment — all 5 CPC codes
+      - "B64C27/20"          # shrouded
+      - "B64C11/001"         # shrouded
+      - "B64U50/14"          # shrouded
+      - "B64C29/0033"        # open_rotor
+      - "B64C29/0025"        # open_rotor
 
 
 
