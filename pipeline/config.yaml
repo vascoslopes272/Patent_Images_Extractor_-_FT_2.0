@@ -52,12 +52,14 @@ extractor:
   batch_size: 1                  # pages processed at once; increase if GPU memory allows
   save_format: "PNG"            # "JPEG" (smaller, universal) or "PNG" (lossless)
 
-# ── Image Processing (Phase 2) ──
+# ── Image Processing (Phase 3) ──
 processor:
   target_size: 224              # DINOv2 input size
   padding_color: [255, 255, 255] # white padding
   min_crop_pixels: 50           # discard crops smaller than this (px width or height)
   save_format: "PNG"            # must match extractor.save_format
+  main_image_only: false        # true → only the image marked "Set as Main" per patent
+  force_reprocess: false        # true → delete processed/ cache and rerun from scratch
 
 # ── Review UI (Phase 2) ──
 reviewer:
