@@ -8,16 +8,20 @@ PUBLIC API
 ──────────
     collect_image_paths(image_dir)                          → list[Path]
     patent_id_from_path(path)                               → str
+    category_from_path(path)                                → str
     initialize_dinov2(model_name, device)                    → (processor, model)
     extract_embeddings(image_paths, processor, model,
                        device, batch_size)                  → (image_emb, img_meta_df,
                                                                patent_ids, patent_emb)
     l2_normalize(embeddings)                                → np.ndarray
+    pca_reduce(X, n_components, seed)                       → np.ndarray
+    hdbscan_cluster(X_pca, patent_ids,
+                    min_cluster_size, min_samples)          → (cluster_df, labels)
     dbscan_cluster(X_norm, patent_ids, min_samples,
                    eps_candidates)                          → (cluster_df, labels, best_eps)
-    umap_project(X_norm, seed)                              → np.ndarray
+    umap_project(X, seed)                                   → np.ndarray
     plot_umap_clusters(points_2d, labels, patent_ids,
-                       effective_eps, min_samples)          → matplotlib.Figure
+                       title_suffix, ground_truth_labels)   → matplotlib.Figure
     plot_cluster_gallery(cluster_df, patent_ids,
                          image_paths, plot_dir)             → None  (saves + shows)
 
@@ -31,6 +35,7 @@ import warnings
 from collections import defaultdict
 from pathlib import Path
 
+import hdbscan as hdbscan_lib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -39,6 +44,7 @@ import torch
 import umap as umap_lib
 from PIL import Image
 from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
 from sklearn.metrics import davies_bouldin_score, silhouette_score
 from sklearn.preprocessing import normalize
 from torch.utils.data import DataLoader, Dataset
@@ -68,8 +74,18 @@ def collect_image_paths(image_dir: Path) -> list[Path]:
 
 
 def patent_id_from_path(path: Path) -> str:
-    """Extract patent ID from filename stem (e.g. DE12345_p001.png → DE12345)."""
+    """Extract patent ID from filename stem (e.g. US2022267016A1_SHR_... → US2022267016A1)."""
     return path.name.split("_")[0]
+
+
+def category_from_path(path: Path) -> str:
+    """Extract class label from filename: *_SHR_* → 'shrouded', *_OPN_* → 'open_rotor'."""
+    name = path.name.upper()
+    if "_SHR_" in name:
+        return "shrouded"
+    if "_OPN_" in name:
+        return "open_rotor"
+    return "unknown"
 
 
 def _unique_path(path: Path) -> Path:
@@ -214,6 +230,99 @@ def l2_normalize(embeddings: np.ndarray) -> np.ndarray:
     return X_norm
 
 
+# ── PCA dimensionality reduction ─────────────────────────────────────────────
+
+def pca_reduce(X: np.ndarray, n_components: int = 100, seed: int = 42) -> np.ndarray:
+    """
+    Reduce embedding matrix from D dimensions to n_components using PCA.
+
+    WHY PCA BEFORE CLUSTERING?
+    DINOv2-large produces 1024-d vectors. In very high dimensions all pairwise
+    distances converge to the same value (curse of dimensionality), making
+    distance-based clustering unreliable. PCA projects onto the n_components
+    directions of maximum variance, preserving the most discriminative structure
+    while making distances meaningful again.
+
+    Parameters
+    ----------
+    X            : (N, D) L2-normalised embedding matrix
+    n_components : target dimension (your advisor's recommendation: 100)
+
+    Returns
+    -------
+    X_pca : (N, n_components) reduced matrix
+    """
+    n_components = min(n_components, X.shape[0], X.shape[1])
+    pca = PCA(n_components=n_components, random_state=seed)
+    X_pca = pca.fit_transform(X)
+    var_explained = pca.explained_variance_ratio_.sum() * 100
+    print(f"PCA: {X.shape[1]}d → {n_components}d  |  "
+          f"variance explained: {var_explained:.1f}%")
+    return X_pca
+
+
+# ── HDBSCAN clustering ────────────────────────────────────────────────────────
+
+def hdbscan_cluster(
+    X_pca: np.ndarray,
+    patent_ids: list[str],
+    min_cluster_size: int = 5,
+    min_samples: int | None = None,
+) -> tuple[pd.DataFrame, np.ndarray]:
+    """
+    Cluster PCA-reduced embeddings with HDBSCAN.
+
+    WHY HDBSCAN INSTEAD OF DBSCAN?
+    DBSCAN requires tuning `eps` (the neighbourhood radius), which is hard to
+    set correctly — especially with only 84 points. HDBSCAN builds a hierarchy
+    of density-connected clusters and extracts the most stable ones automatically.
+    It only needs `min_cluster_size` (minimum meaningful group size), which is
+    intuitive: set to ~5% of your dataset (84 × 0.05 ≈ 4–5).
+
+    Parameters
+    ----------
+    X_pca            : (N, d) PCA-reduced, L2-normalised embeddings
+    patent_ids       : list of patent IDs aligned with X_pca rows
+    min_cluster_size : smallest cluster HDBSCAN will recognise (try 4–8 for 84 images)
+    min_samples      : controls noise sensitivity; defaults to min_cluster_size
+
+    Returns
+    -------
+    cluster_df : DataFrame [patent_id, cluster_id, cluster_prob]
+    labels     : (N,) int array (-1 = noise/unclustered)
+    """
+    clusterer = hdbscan_lib.HDBSCAN(
+        min_cluster_size=min_cluster_size,
+        min_samples=min_samples,
+        metric="euclidean",
+        cluster_selection_method="eom",
+    )
+    labels = clusterer.fit_predict(X_pca)
+    probs  = clusterer.probabilities_
+
+    n_clusters = len(set(labels) - {-1})
+    n_noise    = int(np.sum(labels == -1))
+    print(f"HDBSCAN (min_cluster_size={min_cluster_size}): "
+          f"{n_clusters} cluster(s), {n_noise} noise point(s) / {len(labels)} total")
+
+    if n_clusters >= 2:
+        mask = labels != -1
+        sil  = silhouette_score(X_pca[mask], labels[mask])
+        db   = davies_bouldin_score(X_pca[mask], labels[mask])
+        print(f"Silhouette score: {sil:.4f}  |  Davies-Bouldin: {db:.4f}")
+
+    cluster_df = (
+        pd.DataFrame({
+            "patent_id":    patent_ids,
+            "cluster_id":   labels.astype(int),
+            "cluster_prob": np.round(probs, 4),
+        })
+        .sort_values(["cluster_id", "patent_id"])
+        .reset_index(drop=True)
+    )
+    return cluster_df, labels
+
+
 # ── DBSCAN clustering ─────────────────────────────────────────────────────────
 
 def dbscan_cluster(
@@ -315,14 +424,26 @@ def plot_umap_clusters(
     points_2d: np.ndarray,
     patent_cluster_labels: np.ndarray,
     patent_ids: list[str],
-    effective_eps: float,
-    min_samples: int,
+    title_suffix: str = "",
+    ground_truth_labels: list[str] | None = None,
 ) -> plt.Figure:
     """
-    Seaborn scatter of the UMAP 2D projection coloured by DBSCAN cluster label.
+    Seaborn scatter of the UMAP 2D projection coloured by HDBSCAN cluster label.
     Noise points (label = −1) are shown in grey.
+
+    When ground_truth_labels is provided (list of "shrouded" / "open_rotor" strings
+    aligned with patent_ids), a second panel is shown side-by-side so you can
+    directly compare cluster assignments against the true class labels.
+
     Returns the Figure; the caller saves it with safe_save_plot().
     """
+    n_panels = 2 if ground_truth_labels is not None else 1
+    fig, axes = plt.subplots(1, n_panels, figsize=(11 * n_panels, 8))
+    if n_panels == 1:
+        axes = [axes]
+
+    # ── left panel: HDBSCAN cluster assignments ───────────────────────────
+    ax = axes[0]
     unique_labels = sorted(set(patent_cluster_labels))
     n_real        = sum(1 for l in unique_labels if l >= 0)
     palette       = sns.color_palette("tab10", n_colors=max(n_real, 1))
@@ -346,21 +467,54 @@ def plot_umap_clusters(
         "Patent ID": patent_ids,
     })
 
-    fig, ax = plt.subplots(figsize=(11, 8))
     sns.scatterplot(
         data=plot_df, x="UMAP-1", y="UMAP-2", hue="Cluster",
         palette=str_palette, s=90, alpha=0.85,
         edgecolor="black", linewidth=0.4, ax=ax,
     )
+    suffix = f" — {title_suffix}" if title_suffix else ""
     ax.set_title(
-        f"UMAP 2D — DINOv2-Large Patent Embeddings\n"
-        f"(DBSCAN eps={effective_eps:.1f}, min_samples={min_samples})",
-        fontsize=13, fontweight="bold",
+        f"HDBSCAN Cluster Assignments{suffix}\n"
+        f"(DINOv2-Large → L2 norm → PCA → HDBSCAN)",
+        fontsize=12, fontweight="bold",
     )
     ax.set_xlabel("UMAP Dimension 1", fontsize=11)
     ax.set_ylabel("UMAP Dimension 2", fontsize=11)
     ax.legend(title="Cluster", bbox_to_anchor=(1.02, 1), loc="upper left", framealpha=0.9)
     ax.grid(alpha=0.3)
+
+    # ── right panel: ground-truth class labels ────────────────────────────
+    if ground_truth_labels is not None:
+        ax2 = axes[1]
+        gt_categories = sorted(set(ground_truth_labels))
+        _gt_colors = {
+            "shrouded":   "#2196F3",  # blue
+            "open_rotor": "#FF5722",  # orange-red
+            "unknown":    "#9E9E9E",  # grey
+        }
+        gt_pal = {c: _gt_colors.get(c, "#9E9E9E") for c in gt_categories}
+
+        gt_df = pd.DataFrame({
+            "UMAP-1":    points_2d[:, 0],
+            "UMAP-2":    points_2d[:, 1],
+            "Class":     ground_truth_labels,
+            "Patent ID": patent_ids,
+        })
+        sns.scatterplot(
+            data=gt_df, x="UMAP-1", y="UMAP-2", hue="Class",
+            palette=gt_pal, s=90, alpha=0.85,
+            edgecolor="black", linewidth=0.4, ax=ax2,
+        )
+        ax2.set_title(
+            f"Ground-Truth Labels{suffix}\n"
+            f"(Shrouded vs Open Rotor)",
+            fontsize=12, fontweight="bold",
+        )
+        ax2.set_xlabel("UMAP Dimension 1", fontsize=11)
+        ax2.set_ylabel("UMAP Dimension 2", fontsize=11)
+        ax2.legend(title="Class", bbox_to_anchor=(1.02, 1), loc="upper left", framealpha=0.9)
+        ax2.grid(alpha=0.3)
+
     plt.tight_layout()
     return fig
 
