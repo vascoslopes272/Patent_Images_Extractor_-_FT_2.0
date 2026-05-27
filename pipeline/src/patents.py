@@ -150,10 +150,14 @@ def get_subset(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
 
         if filters.get("cpc_first"):
             # Keep only rows where the FIRST CPC code matches one of the listed values.
-            # The CPC column stores codes separated by " | "; we compare only the first one.
-            allowed = [c.strip() for c in filters["cpc_first"]]
-            first_cpc = df["CPC"].fillna("").str.split(r"\s*\|\s*", n=1).str[0].str.strip()
-            subset = subset[first_cpc.isin(allowed)]
+            # Normalize spaces so "B64C 29/0041" (PatSeer) matches "B64C29/0041" (config).
+            import re
+            allowed   = [re.sub(r"\s+", "", c) for c in filters["cpc_first"]]
+            first_cpc = (df["CPC"].fillna("")
+                         .str.split(r"\s*[;|]\s*", n=1).str[0]
+                         .str.strip()
+                         .str.replace(r"\s+", "", regex=True))
+            subset = subset[first_cpc.reindex(subset.index).isin(allowed)]
 
     elif mode == "selected":
         import json

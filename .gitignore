@@ -223,3 +223,7 @@ __marimo__/
 # Staging folder for old files pending deletion
 _to_delete/
 models/
+sidequests/CPC_Analysis.xlsx
+.gitignore
+.gitignore
+sidequests/CPCTitleList.zip

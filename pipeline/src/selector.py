@@ -29,14 +29,15 @@ Downstream usage — set in config.yaml:
     subset:
       mode: "selected"   ← get_subset() reads selected_patents.json
 
-Usage inside 01_patent_selector.ipynb:
+Usage inside 00_patent_filter.ipynb:
     from src.selector import PatentSelectorUI
-    ui = PatentSelectorUI(cfg)
+    ui = PatentSelectorUI(cfg, filters={"cpc_first": [...]})
     ui.show()
     ui.export()    # writes selected_patents.xlsx alongside the JSON
 """
 
 import json
+import re
 from io import BytesIO
 from pathlib import Path
 from datetime import datetime
@@ -105,8 +106,12 @@ class PatentSelectorUI:
             df = df[df["Family Legal Status(Dead/Alive)"] == filters["legal_status"]]
 
         if filters.get("cpc_first"):
-            allowed   = [c.strip() for c in filters["cpc_first"]]
-            first_cpc = df["CPC"].fillna("").str.split(r"\s*\|\s*", n=1).str[0].str.strip()
+            # Normalize spaces so "B64C 29/0041" (PatSeer) matches "B64C29/0041" (config)
+            allowed   = [re.sub(r"\s+", "", c) for c in filters["cpc_first"]]
+            first_cpc = (df["CPC"].fillna("")
+                         .str.split(r"\s*[;|]\s*", n=1).str[0]
+                         .str.strip()
+                         .str.replace(r"\s+", "", regex=True))
             df = df[first_cpc.isin(allowed)]
 
         print(f"  Filters applied: {len(df)} patents match.")
@@ -400,6 +405,10 @@ class PatentSelectorUI:
             logs/selected_patents.xlsx  (one row per selected patent, for inspection)
         """
         self._persist()
+
+        if self._total == 0:
+            print("No patents loaded — nothing to export.")
+            return self.meta_path
 
         selected_ids = self._selected
         cols = ["Record Number", "Title", "CPC", "Record Type",

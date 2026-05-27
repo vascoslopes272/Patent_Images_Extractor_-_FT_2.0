@@ -15,7 +15,7 @@ paths:
 
 # ── Subset Selection ──
 # mode options: "all" | "n_first" | "filter" | "selected"
-#   "selected" → reads logs/selected_patents.json (written by patent_viewer.ipynb)
+#   "selected" → reads logs/selected_patents.json (written by 00_patent_filter.ipynb)
 subset:
   mode: "filter"        # change this to switch what gets processed
   n_first: 10              # used when mode = "n_first"
@@ -24,9 +24,13 @@ subset:
     legal_status: null       # "ALIVE" | "DEAD" | null
     tech_sub_domain: null    # e.g. "TRANSPORT" | null
     cpc_first:               # keep only rows whose FIRST CPC code matches one of these
-      - "B64C29/0041"
-      - "B64C29/0083"
-      - "B64C29/016"
+      - "B64C29/0033"
+      - "B64C29/0025"
+      - "B64C29/0008"
+      - "B64C29/02"
+
+
+
 
 # ── Download Settings ──
 downloader:
