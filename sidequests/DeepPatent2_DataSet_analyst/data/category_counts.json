@@ -1,0 +1,13 @@
+{
+  "total_records": 2459729,
+  "category_counts": {
+    "Ground Vehicle": 146972,
+    "Marine / Watercraft": 17452,
+    "Spacecraft / Rocket": 21563,
+    "Aircraft (Fixed-Wing)": 13968,
+    "Drone / UAV": 3061,
+    "eVTOL / Advanced Air Mobility": 1146,
+    "Helicopter / Rotorcraft": 2266
+  },
+  "uncategorized": 2261963
+}
