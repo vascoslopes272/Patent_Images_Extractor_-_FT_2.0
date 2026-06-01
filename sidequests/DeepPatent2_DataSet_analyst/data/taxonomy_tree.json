@@ -1,0 +1,245 @@
+{
+  "taxonomy": "Hierarchical Aircraft Taxonomy",
+  "version": "1.0",
+  "branches": [
+    {
+      "name": "Aircraft Platforms",
+      "children": [
+        {
+          "name": "Helicopter",
+          "type": "group",
+          "children": [
+            {
+              "name": "Conventional",
+              "type": "category",
+              "keywords_count": 25,
+              "patterns_count": 10,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/04",
+                "B64C27/00"
+              ]
+            },
+            {
+              "name": "Coaxial Tandem",
+              "type": "category",
+              "keywords_count": 25,
+              "patterns_count": 11,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/10",
+                "B64C27/20"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Multirotor Uav",
+          "type": "group",
+          "children": [
+            {
+              "name": "Pure Multirotor",
+              "type": "category",
+              "keywords_count": 35,
+              "patterns_count": 12,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/32",
+                "B64U10/00"
+              ]
+            },
+            {
+              "name": "Hybrid Vtol",
+              "type": "category",
+              "keywords_count": 26,
+              "patterns_count": 11,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C29/00",
+                "B64C27/32"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Evtol",
+          "type": "group",
+          "children": [
+            {
+              "name": "Tilt Rotor Wing",
+              "type": "category",
+              "keywords_count": 30,
+              "patterns_count": 14,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/04",
+                "B64C29/00"
+              ]
+            },
+            {
+              "name": "Lift And Cruise",
+              "type": "category",
+              "keywords_count": 28,
+              "patterns_count": 14,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/32",
+                "B64C29/02"
+              ]
+            },
+            {
+              "name": "Vectored Thrust",
+              "type": "category",
+              "keywords_count": 30,
+              "patterns_count": 14,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C29/04",
+                "B64D27/02"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subsystem Groups",
+      "children": [
+        {
+          "name": "Lift Mechanisms",
+          "type": "group",
+          "children": [
+            {
+              "name": "Blades",
+              "type": "category",
+              "keywords_count": 45,
+              "patterns_count": 17,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/32",
+                "B64D27/02"
+              ]
+            },
+            {
+              "name": "Hub And Pitch Assembly",
+              "type": "category",
+              "keywords_count": 44,
+              "patterns_count": 18,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C27/04",
+                "B64C27/32"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Structural Airframe",
+          "type": "group",
+          "children": [
+            {
+              "name": "Fuselage Cabin",
+              "type": "category",
+              "keywords_count": 50,
+              "patterns_count": 16,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C3/38",
+                "B64C5/00"
+              ]
+            },
+            {
+              "name": "Booms Arms",
+              "type": "category",
+              "keywords_count": 44,
+              "patterns_count": 15,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64U10/00",
+                "B64D35/00"
+              ]
+            },
+            {
+              "name": "Landing Gear",
+              "type": "category",
+              "keywords_count": 49,
+              "patterns_count": 18,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C25/00",
+                "B64D25/00"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Avionics And Energy",
+          "type": "group",
+          "children": [
+            {
+              "name": "Powerplants Motors",
+              "type": "category",
+              "keywords_count": 69,
+              "patterns_count": 27,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64D27/02",
+                "B64D27/12"
+              ]
+            },
+            {
+              "name": "Energy Storage",
+              "type": "category",
+              "keywords_count": 61,
+              "patterns_count": 23,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64D27/14",
+                "H01M4/00"
+              ]
+            },
+            {
+              "name": "Guidance Actuators",
+              "type": "category",
+              "keywords_count": 68,
+              "patterns_count": 34,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64C13/00",
+                "G05D1/00"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Mission Payload",
+          "type": "group",
+          "children": [
+            {
+              "name": "Optical Gimbals",
+              "type": "category",
+              "keywords_count": 53,
+              "patterns_count": 17,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64D35/00",
+                "H04N5/225"
+              ]
+            },
+            {
+              "name": "Cargo Systems",
+              "type": "category",
+              "keywords_count": 57,
+              "patterns_count": 22,
+              "cpc_count": 2,
+              "cpc_codes": [
+                "B64D27/14",
+                "B64D35/00"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

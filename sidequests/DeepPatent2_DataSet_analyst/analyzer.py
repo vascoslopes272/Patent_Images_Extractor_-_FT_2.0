@@ -11,7 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from categories import CATEGORIES
+from categories_refactored import CATEGORIES, PLATFORM_ARCHITECTURES, TECHNICAL_SUBSYSTEMS
 
 
 # ---------------------------------------------------------------------------
@@ -83,10 +83,29 @@ _COMPILED: dict[str, re.Pattern] = {
     cat: _build_pattern(kws) for cat, kws in CATEGORIES.items()
 }
 
+# Separate patterns for platforms and subsystems
+_COMPILED_PLATFORMS: dict[str, re.Pattern] = {
+    cat: _build_pattern(kws) for cat, kws in PLATFORM_ARCHITECTURES.items()
+}
+
+_COMPILED_SUBSYSTEMS: dict[str, re.Pattern] = {
+    cat: _build_pattern(kws) for cat, kws in TECHNICAL_SUBSYSTEMS.items()
+}
+
 
 def match_categories(text: str) -> list[str]:
     """Return list of category names whose keywords appear in text."""
     return [cat for cat, pat in _COMPILED.items() if pat.search(text)]
+
+
+def match_platforms(text: str) -> list[str]:
+    """Return platform architectures that match the text."""
+    return [cat for cat, pat in _COMPILED_PLATFORMS.items() if pat.search(text)]
+
+
+def match_subsystems(text: str) -> list[str]:
+    """Return technical subsystems that match the text."""
+    return [cat for cat, pat in _COMPILED_SUBSYSTEMS.items() if pat.search(text)]
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +141,9 @@ def run_analysis(data_dir: Path) -> dict[str, Any]:
         category_records: dict[str, list] — category → full record list
         uncategorized   : int
         file_errors     : list[str]
+        platform_counts : dict[str, int]  — platform → count
+        subsystem_counts: dict[str, int]  — subsystem → count
+        platform_subsystem_matrix: dict[str, dict[str, int]]
     """
     json_files = scan_data_dir(data_dir)
     files_found = len(json_files)
@@ -144,6 +166,24 @@ def run_analysis(data_dir: Path) -> dict[str, Any]:
         matched_ids.update(id(r) for r in recs)
     uncategorized = sum(1 for r in all_records if id(r) not in matched_ids)
 
+    # NEW: Separate platform and subsystem counts
+    platform_counts: dict[str, int] = defaultdict(int)
+    subsystem_counts: dict[str, int] = defaultdict(int)
+    platform_subsystem_matrix: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+    for record in all_records:
+        text = extract_text(record)
+        platforms = match_platforms(text)
+        subsystems = match_subsystems(text)
+
+        for plat in platforms:
+            platform_counts[plat] += 1
+            for subsys in subsystems:
+                platform_subsystem_matrix[plat][subsys] += 1
+
+        for subsys in subsystems:
+            subsystem_counts[subsys] += 1
+
     return {
         "files_found": files_found,
         "total_records": total_records,
@@ -151,4 +191,56 @@ def run_analysis(data_dir: Path) -> dict[str, Any]:
         "category_records": category_records,
         "uncategorized": uncategorized,
         "file_errors": file_errors,
+        # NEW fields
+        "platform_counts": dict(platform_counts),
+        "subsystem_counts": dict(subsystem_counts),
+        "platform_subsystem_matrix": {k: dict(v) for k, v in platform_subsystem_matrix.items()},
     }
+
+
+# ---------------------------------------------------------------------------
+# CSV Export
+# ---------------------------------------------------------------------------
+
+def export_csv_reports(results: dict[str, Any], output_dir: Path) -> None:
+    """Export 3 CSV files: platforms, subsystems, and matrix."""
+    import csv
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # CSV 1: Platform Distribution
+    platforms_csv = output_dir / "01_platforms_distribution.csv"
+    with open(platforms_csv, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Platform Architecture", "Patents", "Percentage"])
+        total = sum(results['platform_counts'].values()) if results['platform_counts'] else 1
+        for name in sorted(results['platform_counts'].keys()):
+            count = results['platform_counts'][name]
+            pct = (count / total * 100) if total > 0 else 0
+            writer.writerow([name, count, f"{pct:.2f}%"])
+    print(f"✓ {platforms_csv.name}")
+
+    # CSV 2: Subsystems Distribution
+    subsystems_csv = output_dir / "02_subsystems_distribution.csv"
+    with open(subsystems_csv, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Technical Subsystem", "Patents"])
+        for name in sorted(results['subsystem_counts'].keys()):
+            count = results['subsystem_counts'][name]
+            writer.writerow([name, count])
+    print(f"✓ {subsystems_csv.name}")
+
+    # CSV 3: Platform-Subsystem Matrix
+    matrix_csv = output_dir / "03_platform_subsystem_matrix.csv"
+    subsystems = sorted(results['subsystem_counts'].keys())
+    platforms = sorted(results['platform_counts'].keys())
+    with open(matrix_csv, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Platform"] + subsystems)
+        for platform in platforms:
+            row = [platform]
+            for subsystem in subsystems:
+                count = results['platform_subsystem_matrix'].get(platform, {}).get(subsystem, 0)
+                row.append(count)
+            writer.writerow(row)
+    print(f"✓ {matrix_csv.name}")

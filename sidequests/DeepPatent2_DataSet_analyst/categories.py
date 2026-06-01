@@ -1,166 +1,349 @@
 """
-Keyword taxonomy for patent categorization.
+Refactored keyword taxonomy with strict separation of:
+- PLATFORM_ARCHITECTURES: Aircraft configuration types
+- TECHNICAL_SUBSYSTEMS: Components/subsystems
 
-Each entry maps a human-readable category label to a list of keywords.
-Matching is case-insensitive and checks for whole-word or substring presence
-(configurable in analyzer.py). Add or remove keywords freely.
+Each patent matches to ONE platform + ZERO-OR-MORE subsystems.
 """
 
-CATEGORIES: dict[str, list[str]] = {
-    "Aircraft (Fixed-Wing)": [
-        # Base terms
+PLATFORM_ARCHITECTURES = {
+    "Fixed-Wing Aircraft": [
         "aircraft", "airplane", "aeroplane", "plane", "jet", "airliner",
-        # Military variants
-        "fighter", "bomber", "interceptor", "reconnaissance", "transport",
-        "cargo aircraft", "tanker", "military aircraft", "attack aircraft",
-        # General types
-        "biplane", "monoplane", "triplane", "glider", "sailplane",
-        "seaplane", "floatplane", "amphibian aircraft", "bush plane",
-        # Engine/power types
-        "turboprop", "turbofan", "turbojet", "piston aircraft", "propeller",
-        "jet engine", "turbine", "electric aircraft", "hybrid aircraft",
-        # Speed-related
+        "fixed wing", "fixed-wing", "fighter", "bomber", "interceptor",
+        "reconnaissance", "transport aircraft", "cargo aircraft", "tanker",
+        "military aircraft", "attack aircraft", "biplane", "monoplane",
+        "triplane", "glider", "sailplane", "seaplane", "floatplane",
+        "amphibian aircraft", "bush plane", "commuter aircraft",
+        "regional aircraft", "narrow-body", "wide-body", "jumbo jet",
+        "turboprop", "turbofan", "turbojet", "piston aircraft",
+        "propeller", "jet engine", "turbine", "electric aircraft",
+        "hybrid aircraft", "gas turbine engine", "turboshaft engine",
         "supersonic", "subsonic", "hypersonic", "transonic",
-        # Airframe components
-        "fuselage", "wing", "airfoil", "aileron", "elevator", "rudder",
-        "empennage", "tail section", "landing gear", "cockpit",
-        "nacelle", "engine pod", "air intake", "pitot",
-        # Specific designs
-        "canard", "delta wing", "swept wing", "variable geometry",
-        "short takeoff", "stol aircraft", "vtol aircraft",
-        # Trainer & specialized
-        "trainer aircraft", "aerobatic", "experimental aircraft",
+        "high-speed", "low-speed", "cruise speed", "wing",
+        "wing assembly", "airfoil", "wing section", "swept wing",
+        "delta wing", "strut wing", "cantilever wing", "folding wing",
+        "variable geometry wing", "wing tip", "winglet", "sharklet",
+        "split scimitar", "aileron", "elevator", "rudder", "flap",
+        "slat", "trim tab", "control surface", "flight surface",
+        "leading edge", "trailing edge", "control actuator", "fuselage",
+        "cabin", "pressurized cabin", "cargo hold", "cockpit",
+        "flight deck", "fuselage frame", "skin", "stringers",
+        "stiffeners", "bulkhead", "frame", "floor beam",
+        "structural composite", "aluminum", "carbon fiber",
+        "composite fuselage", "landing gear", "nose gear",
+        "main gear", "wheel", "tire", "shock absorber",
+        "oleo strut", "damper", "retractable landing gear",
+        "fixed landing gear", "skid", "pontoon", "float",
+        "engine", "engine mount", "engine pylon", "nacelle",
+        "engine pod", "turbofan engine", "turbojet engine",
+        "fuel system", "fuel tank", "fuel pump", "fuel line",
+        "air intake", "inlet", "intake duct", "air scoop",
+        "ramjet", "scramjet", "pitot tube", "static port",
+        "exhaust nozzle", "thrust vectoring", "empennage",
+        "tail section", "tail assembly", "vertical stabilizer",
+        "vertical tail", "fin", "horizontal stabilizer",
+        "horizontal tail", "stabilator", "avionics",
+        "navigation system", "autopilot", "flight control system",
+        "hydraulic system", "electrical system", "pneumatic system",
+        "canard", "tailless aircraft", "flying wing",
+        "blended wing body", "variable geometry", "short takeoff",
+        "stol aircraft", "vtol aircraft", "fold-out wing",
+        "morphing wing", "trainer aircraft", "aerobatic",
+        "experimental aircraft", "microlight", "ultralight",
+        "general aviation", "electric propulsion",
+        "hybrid propulsion", "solar powered", "hydrogen aircraft",
+        "fuel cell aircraft",
     ],
-    "Drone / UAV": [
-        # Base terms
-        "drone", "uav", "uas", "unmanned aerial", "unmanned aircraft",
-        "rpv", "remotely piloted", "pilotless",
-        # Multirotor types
-        "quadcopter", "hexacopter", "octocopter", "multicopter", "multirotor",
-        "quadrotor", "hexarotor", "octorotor",
-        # Fixed-wing UAV
-        "fixed-wing drone", "fixed-wing uav", "uav aircraft",
-        # Applications & variants
-        "delivery drone", "camera drone", "surveillance drone",
-        "inspection drone", "mapping drone", "agricultural drone",
-        "racing drone", "aerial platform", "aerial system",
-        # Components
-        "gimbal", "payload", "propeller", "battery-electric",
-        "fpv", "autonomous drone", "autonomous flight",
-        # Size variants
-        "nano drone", "micro drone", "mini drone", "small uav",
-        "tactical uav", "strategic uav",
-    ],
-    "Helicopter / Rotorcraft": [
-        # Base terms
-        "helicopter", "rotorcraft", "chopper", "heli",
-        "autogyro", "gyroplane", "gyrocopter", "gyromotor",
-        # Helicopter types
-        "light helicopter", "heavy helicopter", "utility helicopter",
-        "attack helicopter", "transport helicopter", "cargo helicopter",
-        "ambulance helicopter", "medevac helicopter", "rescue helicopter",
-        # Military variants
-        "attack chopper", "gunship", "armed helicopter", "military helicopter",
-        # Components
+
+    "Rotary-Wing / Helicopter": [
+        "helicopter", "rotorcraft", "chopper", "heli", "autogyro",
+        "gyroplane", "gyrocopter", "gyromotor", "light helicopter",
+        "heavy helicopter", "utility helicopter", "attack helicopter",
+        "transport helicopter", "cargo helicopter", "ambulance helicopter",
+        "medevac helicopter", "rescue helicopter", "observation helicopter",
+        "training helicopter", "attack chopper", "gunship",
+        "armed helicopter", "military helicopter", "anti-tank helicopter",
         "rotor blade", "tail rotor", "main rotor", "rotor head",
-        "swashplate", "cyclic", "collective", "yaw control",
-        "rotor system", "blade root", "blade tip",
-        # Specific designs
-        "tiltrotor", "convertiplane", "compound helicopter",
-        "coaxial", "tandem rotor", "side-by-side rotor",
-        # Technical
-        "vertical takeoff", "hover", "hovering aircraft",
+        "rotor mast", "rotor hub", "rotor pitch", "blade root",
+        "blade tip", "rotor track", "rotor tracking", "swashplate",
+        "cyclic control", "collective pitch", "yaw control",
+        "rotor brake", "automatic rotor brake", "rotor system",
+        "coaxial rotor", "tandem rotor", "flight control",
+        "cyclic", "collective", "pedal control", "autopilot",
+        "stability augmentation", "flight management",
+        "electronic control", "mechanical control", "gearbox",
+        "transmission", "main gearbox", "tail rotor drive",
+        "drive shaft", "power transmission", "torque distribution",
+        "flexible coupling", "vibration isolator", "fuselage",
+        "cabin", "boom", "tail boom", "tail pylon", "frame",
+        "structural composite", "landing gear",
+        "skid landing gear", "wheeled landing gear",
+        "gas turbine", "piston engine", "reciprocating engine",
+        "turbo shaft", "engine mount", "fuel system",
+        "engine controls", "power plant", "tiltrotor",
+        "convertiplane", "compound helicopter", "side-by-side rotor",
+        "articulated rotor", "semi-rigid rotor",
+        "fully articulated rotor", "vertical takeoff", "hover",
+        "hovering aircraft", "air taxi capability",
+        "autonomous helicopter",
     ],
-    "eVTOL / Advanced Air Mobility": [
-        # Base terms
+
+    "UAV / Drone": [
+        "drone", "uav", "uas", "unmanned aerial", "unmanned aircraft",
+        "rpv", "remotely piloted", "pilotless", "autonomous aircraft",
+        "quadcopter", "hexacopter", "octocopter", "multicopter",
+        "multirotor", "quadrotor", "hexarotor", "octorotor",
+        "tri-rotor", "coaxial quad", "counter-rotating",
+        "coaxial rotor", "fixed-wing drone", "fixed-wing uav",
+        "fixed wing aircraft", "flying wing drone",
+        "blended wing drone", "pusher drone", "hybrid drone",
+        "vertical takeoff drone", "vtol drone", "hybrid vtol",
+        "fixed-wing vtol", "delivery drone", "cargo drone",
+        "logistics drone", "camera drone", "surveillance drone",
+        "monitoring drone", "inspection drone", "mapping drone",
+        "surveying drone", "agricultural drone", "crop spraying",
+        "precision agriculture", "racing drone", "acrobatic drone",
+        "training drone", "search and rescue", "rescue drone",
+        "emergency response", "aerial platform", "aerial system",
+        "aerial vehicle", "frame", "airframe", "boom", "arm",
+        "rotor arm", "chassis", "body", "shell", "fuselage",
+        "landing gear", "skid", "landing pad",
+        "structural composite", "carbon fiber frame", "motor",
+        "electric motor", "brushless motor", "motor controller",
+        "propeller", "rotor blade", "rotor", "pusher propeller",
+        "propulsion system", "drive system", "high-speed motor",
+        "high-torque motor", "battery", "li-ion battery",
+        "lithium battery", "battery pack", "battery management",
+        "power distribution", "power electronics", "charging system",
+        "hot-swap battery", "modular battery", "fuel cell",
+        "hydrogen fuel", "supercapacitor", "camera", "gimbal",
+        "payload", "sensor", "lidar", "infrared", "thermal camera",
+        "rgb camera", "depth sensor", "obstacle detection", "imu",
+        "inertial measurement", "gps", "gnss", "barometer",
+        "altimeter", "flight controller", "autopilot",
+        "autonomous flight", "navigation", "obstacle avoidance",
+        "path planning", "remote control", "rc receiver",
+        "transmitter", "wireless", "telemetry", "data link",
+        "communication system", "fpv", "first person view",
+        "video transmission", "nano drone", "micro drone",
+        "mini drone", "small uav", "medium uav", "large uav",
+        "tactical uav", "strategic uav", "long endurance",
+        "extended range", "high altitude", "all-weather",
+        "weatherproof", "waterproof", "ip rating",
+        "noise reduction", "quiet rotor", "low noise",
+        "modular drone", "reconfigurable drone", "modular arm",
+        "foldable drone", "compact drone", "portable drone",
+    ],
+
+    "VTOL / Advanced Air Mobility": [
         "evtol", "vtol", "vertical takeoff", "vertical landing",
         "electric vertical", "air taxi", "flying vehicle",
-        # Urban air mobility
         "urban air mobility", "uam", "urban aviation",
         "city air mobility", "metropolitan air transport",
-        # Personal/advanced
-        "flying car", "personal air vehicle", "pav", "personal air transport",
-        "advanced air mobility", "aam", "next-gen air transport",
-        # Electric/alternative
-        "electric aircraft", "battery-electric", "hybrid-electric",
-        "electric propulsion", "electric motor", "fuel cell aircraft",
-        # Specific concepts
-        "air taxi service", "aerial taxi", "autonomous air vehicle",
-        "passenger drone", "electric copter", "electric helicopter",
-        "tiltwing", "tiltwing aircraft", "tilt-rotor",
-        "distributed electric", "distributed propulsion",
-        # Emerging terms
-        "advanced vehicle", "next generation aircraft", "future aircraft",
-        "innovative transport", "sustainable aviation", "zero-emission aircraft",
+        "flying car", "personal air vehicle", "pav",
+        "personal air transport", "advanced air mobility", "aam",
+        "next-gen air transport", "electric aircraft",
+        "battery-electric", "hybrid-electric", "electric propulsion",
+        "electric motor", "fuel cell aircraft", "air taxi service",
+        "aerial taxi", "autonomous air vehicle", "passenger drone",
+        "electric copter", "electric helicopter", "tiltwing",
+        "tiltwing aircraft", "tilt-rotor", "distributed electric",
+        "distributed propulsion", "advanced vehicle",
+        "next generation aircraft", "future aircraft",
+        "innovative transport", "sustainable aviation",
+        "zero-emission aircraft",
     ],
-    "Spacecraft / Rocket": [
-        # Base terms
-        "spacecraft", "satellite", "rocket", "launch vehicle",
-        "space vehicle", "orbital vehicle", "orbital platform",
-        # Specific spacecraft types
-        "space shuttle", "space plane", "spaceplane", "shuttle",
-        "capsule", "orbiter", "space station", "space module",
-        "lander", "lunar lander", "moon lander", "mars lander",
-        "probe", "explorer probe", "deep space probe",
-        # Rocket types
-        "launch vehicle", "expendable launch", "reusable launch",
-        "heavy-lift launch", "medium-lift launch", "small-launch vehicle",
-        "sounding rocket", "suborbital rocket",
-        # Components & systems
-        "propulsion", "thruster", "nozzle", "fairing", "payload bay",
-        "heat shield", "reentry vehicle", "reentry module",
-        "solar panel", "radiator", "antenna", "docking mechanism",
-        "staging", "booster", "stage separation",
-        # Technical
-        "reentry", "ablation", "cryogenic", "hypergolic propellant",
-        "solid rocket", "liquid rocket", "hybrid rocket",
-    ],
-    "Ground Vehicle": [
-        # Base terms
-        "vehicle", "automobile", "car", "automotive",
-        # Vehicle types
-        "truck", "bus", "van", "pickup", "sedan", "coupe", "hatchback",
-        "wagon", "suv", "sport utility", "crossover", "minivan",
-        # Specialist vehicles
-        "ambulance", "fire truck", "fire engine", "police car", "patrol car",
-        "tow truck", "dump truck", "semi truck", "semi-trailer",
-        "cement truck", "tanker truck", "flatbed",
-        # Recreational & specialty
-        "motorcycle", "motorbike", "scooter", "atv", "quad bike",
-        "bicycle", "e-bike", "electric bicycle", "trike", "tricycle",
-        "trailer", "travel trailer", "camper", "rv", "recreational vehicle",
-        # Farm & industrial
-        "tractor", "farm vehicle", "construction vehicle", "excavator",
-        "bulldozer", "loader", "grader", "forklift", "industrial vehicle",
-        # Electric & autonomous
-        "electric vehicle", "ev", "plug-in hybrid", "phev", "hybrid vehicle",
-        "autonomous vehicle", "self-driving", "driverless car", "robot car",
-        # Powered variants
-        "electric car", "electric truck", "electric motorcycle",
-        "fuel cell vehicle", "hydrogen vehicle",
-    ],
-    "Marine / Watercraft": [
-        # Base terms
-        "boat", "ship", "vessel", "watercraft", "marine vessel",
-        # Ship types
-        "yacht", "sailboat", "motorboat", "speedboat", "runabout",
-        "sailship", "container ship", "tanker", "cargo ship",
-        "passenger ship", "cruise ship", "liner", "freighter",
-        "fishing vessel", "trawler", "seiner", "whaling ship",
-        # Small craft
-        "dinghy", "raft", "canoe", "kayak", "skiff", "catamaran",
-        "trimaran", "pontoon", "houseboat", "barge", "tugboat",
-        "ferry", "ferryboat", "water taxi",
-        # Military/specialist
-        "submarine", "battleship", "destroyer", "frigate", "corvette",
-        "mine sweeper", "patrol boat", "torpedo boat",
-        "amphibious", "hovercraft", "air cushion vehicle",
-        # Components
-        "hull", "hull design", "propeller", "screw propeller", "water jet",
-        "rudder", "keel", "sail", "mast", "rigging",
-        "anchor", "deck", "cabin", "hold",
-        # Technical
-        "marine propulsion", "marine engine", "diesel engine",
-        "electric motor", "marine battery", "fuel cell",
+
+    "Hybrid / Special Configuration": [
+        "hybrid architecture", "hybrid platform", "convertible aircraft",
+        "morphing aircraft", "variable geometry aircraft",
+        "amphibious aircraft", "amphibian", "spacecraft",
+        "satellite", "rocket", "launch vehicle", "space vehicle",
+        "orbital vehicle", "orbital platform", "space shuttle",
+        "space plane", "spaceplane", "shuttle", "capsule",
+        "orbiter", "space station", "space module", "lander",
+        "lunar lander", "moon lander", "mars lander", "probe",
+        "explorer probe", "deep space probe", "expendable launch",
+        "reusable launch", "heavy-lift launch", "medium-lift launch",
+        "small-launch vehicle", "sounding rocket",
+        "suborbital rocket", "propulsion", "thruster", "nozzle",
+        "fairing", "payload bay", "heat shield", "reentry vehicle",
+        "reentry module", "solar panel", "radiator", "antenna",
+        "docking mechanism", "staging", "booster",
+        "stage separation", "reentry", "ablation", "cryogenic",
+        "hypergolic propellant", "solid rocket", "liquid rocket",
+        "hybrid rocket",
     ],
 }
+
+TECHNICAL_SUBSYSTEMS = {
+    "Fuselage & Structure": [
+        "fuselage", "cabin", "pressurized cabin", "cargo hold",
+        "cockpit", "flight deck", "fuselage frame", "fuselage skin",
+        "structural composite", "aluminum fuselage", "carbon fiber fuselage",
+        "composite fuselage", "monocoque structure", "frame",
+        "stringers", "stiffeners", "bulkhead", "floor beam",
+        "floor panel", "deck", "skin panel", "skin thickness",
+        "aluminum", "carbon fiber", "composite material",
+        "titanium", "kevlar", "aramid fiber", "fiberglass",
+        "epoxy resin", "structural material",
+    ],
+
+    "Propulsion System": [
+        "engine", "motor", "electric motor", "brushless motor",
+        "dc motor", "ac motor", "piston engine", "reciprocating engine",
+        "turbine engine", "gas turbine", "turbo shaft", "turbofan",
+        "turbojet", "turboprop", "jet engine", "induction motor",
+        "permanent magnet motor", "engine mount", "engine pylon",
+        "nacelle", "engine pod", "engine housing", "engine cowling",
+        "engine intake", "fuel system", "fuel tank", "fuel pump",
+        "fuel line", "fuel flow control", "fuel injection",
+        "carburetor", "fuel filter", "fuel selector valve",
+        "fuel cell", "hydrogen fuel", "electric propulsion",
+        "hybrid propulsion", "solar powered", "hydrogen powered",
+        "thrust vector", "vectored thrust", "thrust control",
+        "power transmission", "drive system", "power delivery",
+    ],
+
+    "Landing Gear & Undercarriage": [
+        "landing gear", "undercarriage", "main landing gear",
+        "nose gear", "front gear", "rear gear", "wheeled landing gear",
+        "skid landing gear", "fixed landing gear",
+        "retractable landing gear", "wheel", "tire", "pneumatic tire",
+        "tire assembly", "wheel assembly", "brake assembly",
+        "wheel bearing", "shock absorber", "oleo strut", "damper",
+        "spring", "hydraulic strut", "pneumatic strut",
+        "suspension system", "skid", "pontoon", "float", "ski",
+        "cross-country landing gear", "gear extension", "gear retraction",
+        "gear position indicator", "anti-skid system", "brake system",
+    ],
+
+    "Rotor & Blade Systems": [
+        "rotor", "rotor system", "rotor assembly", "main rotor",
+        "tail rotor", "rotor head", "rotor hub", "rotor mast",
+        "rotor disc", "rotor blade", "main rotor blade",
+        "tail rotor blade", "blade root", "blade tip", "blade section",
+        "blade design", "airfoil blade", "blade pitch",
+        "collective pitch", "cyclic pitch", "pitch control", "pitch horn",
+        "pitch link", "pitch actuator", "variable pitch rotor",
+        "fixed pitch rotor", "pusher rotor", "lift rotor",
+        "ducted rotor", "open rotor", "shrouded rotor",
+        "rotor housing", "rotor pitch control", "rotor speed control",
+        "rotor speed", "rotor rpm", "rotor tracking", "rotor balance",
+        "rotor vibration", "rotor noise", "rotor efficiency",
+    ],
+
+    "Wing Systems": [
+        "wing", "wing assembly", "wing section", "main wing",
+        "swept wing", "delta wing", "strut wing", "cantilever wing",
+        "folding wing", "variable geometry wing", "morphing wing",
+        "airfoil", "wing surface", "wing box", "wing spar",
+        "wing rib", "wing skin", "wing joint", "wing tip",
+        "wing root", "wing leading edge", "wing trailing edge",
+        "winglet", "sharklet", "split scimitar", "aileron",
+        "flap", "slat", "leading edge device", "trailing edge device",
+        "spoiler",
+    ],
+
+    "Control Surfaces & Flight Control": [
+        "control surface", "flight surface", "flight control surface",
+        "aileron", "elevator", "rudder", "flap", "slat",
+        "trim tab", "trim surface", "elevator trim", "rudder trim",
+        "aileron trim", "flight control system", "autopilot",
+        "stability augmentation", "electronic control", "fly-by-wire",
+        "mechanical control", "control actuator", "flight actuator",
+        "servo actuator", "hydraulic actuator", "electric actuator",
+        "pneumatic actuator", "actuator linkage", "actuator cable",
+        "empennage", "tail section", "tail assembly",
+        "tail structure", "vertical stabilizer", "vertical tail",
+        "fin", "horizontal stabilizer", "horizontal tail", "stabilator",
+    ],
+
+    "Avionics & Control Systems": [
+        "navigation system", "navigation instrument", "gps", "gnss",
+        "inertial navigation", "ins", "inertial measurement", "imu",
+        "barometer", "altimeter", "airspeed indicator",
+        "autopilot", "automatic flight control", "autonomous flight",
+        "flight management system", "flight control system",
+        "stability control", "attitude control", "gyroscopic control",
+        "sensor", "lidar", "radar", "infrared", "thermal camera",
+        "rgb camera", "depth sensor", "obstacle detection",
+        "proximity sensor", "pressure sensor", "temperature sensor",
+        "communication system", "data link", "telemetry",
+        "wireless communication", "remote control", "rc receiver",
+        "transmitter", "fpv", "first person view",
+        "video transmission", "instrument panel", "flight instrument",
+        "cockpit display", "head-up display", "hud",
+        "glass cockpit", "avionics suite",
+    ],
+
+    "Power & Energy Systems": [
+        "battery", "lithium battery", "li-ion battery",
+        "lithium-ion", "battery pack", "battery cell", "battery module",
+        "battery management", "battery cooling", "thermal management",
+        "energy storage", "power distribution", "power electronics",
+        "dc-dc converter", "power conditioning", "fuel cell",
+        "hydrogen fuel", "supercapacitor", "ultracapacitor",
+        "solar panel", "solar cell", "photovoltaic",
+        "electrical system", "electrical wiring", "electrical harness",
+        "circuit breaker", "electrical distribution", "generator",
+        "alternator", "power generation", "motor controller",
+        "motor drive", "inverter", "power inverter",
+        "charging system", "charging circuit",
+    ],
+
+    "Air Intake & Exhaust System": [
+        "air intake", "intake duct", "intake system", "air inlet",
+        "air scoop", "ram air", "ram intake", "pitot tube",
+        "static port", "probe", "ramjet", "scramjet",
+        "supersonic inlet", "subsonic inlet", "variable inlet",
+        "exhaust", "exhaust nozzle", "nozzle", "exhaust system",
+        "exhaust duct", "exhaust manifold", "thrust nozzle",
+        "afterburner", "nozzle closing mechanism",
+    ],
+
+    "Thermal Management & Cooling": [
+        "cooling system", "thermal management", "heat dissipation",
+        "heat sink", "radiator", "cooling radiator", "cooling fan",
+        "cooling duct", "air cooling", "liquid cooling", "oil cooling",
+        "fuel cooling", "passive cooling", "active cooling",
+        "coolant", "coolant pump", "coolant line", "thermostat",
+        "temperature control", "thermal valve",
+    ],
+
+    "Payload & Mission Systems": [
+        "payload", "mission payload", "payload capacity",
+        "cargo system", "cargo hold", "cargo handling", "camera",
+        "gimbal", "camera gimbal", "optical gimbal", "imaging system",
+        "reconnaissance payload", "surveillance system",
+        "monitoring system", "delivery system", "cargo delivery",
+        "supply delivery", "spray system", "spraying mechanism",
+        "agricultural payload", "payload integration", "payload pod",
+        "pod assembly", "external pod", "equipment pod",
+    ],
+
+    "Acoustic & Noise Reduction": [
+        "acoustic", "acoustic treatment", "noise reduction",
+        "sound damping", "sound absorption", "sound insulation",
+        "acoustic lining", "acoustic foam", "acoustic panel",
+        "vibration isolation", "vibration damper", "vibration control",
+        "damping system", "isolation mount", "resilient mount",
+        "rotor noise", "engine noise", "propeller noise",
+        "quiet rotor", "low noise", "noise level",
+        "acoustic enclosure", "acoustic shroud", "noise suppression",
+    ],
+
+    "Safety & Redundancy Systems": [
+        "parachute", "ballistic parachute", "emergency parachute",
+        "safety system", "emergency system", "fail-safe system",
+        "redundancy", "redundant system", "backup system",
+        "backup power", "emergency power", "power redundancy",
+        "emergency landing", "emergency descent", "ditching system",
+        "emergency exit", "emergency egress", "crash protection",
+        "impact protection", "structural safety", "fire protection",
+        "fire suppression",
+    ],
+}
+
+# Combined for compatibility
+CATEGORIES = {**PLATFORM_ARCHITECTURES, **TECHNICAL_SUBSYSTEMS}

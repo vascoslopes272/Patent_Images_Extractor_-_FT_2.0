@@ -1,0 +1,29 @@
+
+================================================================================
+SUBSYSTEM GROUPS HIERARCHY
+================================================================================
+
+├── Lift Mechanisms
+│   ├── Blades
+│   │   ├── [45 keywords | 17 patterns | 2 CPC codes]
+│   └── Hub And Pitch Assembly
+│       ├── [44 keywords | 18 patterns | 2 CPC codes]
+├── Structural Airframe
+│   ├── Fuselage Cabin
+│   │   ├── [50 keywords | 16 patterns | 2 CPC codes]
+│   ├── Booms Arms
+│   │   ├── [44 keywords | 15 patterns | 2 CPC codes]
+│   └── Landing Gear
+│       ├── [49 keywords | 18 patterns | 2 CPC codes]
+├── Avionics And Energy
+│   ├── Powerplants Motors
+│   │   ├── [69 keywords | 27 patterns | 2 CPC codes]
+│   ├── Energy Storage
+│   │   ├── [61 keywords | 23 patterns | 2 CPC codes]
+│   └── Guidance Actuators
+│       ├── [68 keywords | 34 patterns | 2 CPC codes]
+└── Mission Payload
+    ├── Optical Gimbals
+    │   ├── [53 keywords | 17 patterns | 2 CPC codes]
+    └── Cargo Systems
+        ├── [57 keywords | 22 patterns | 2 CPC codes]
