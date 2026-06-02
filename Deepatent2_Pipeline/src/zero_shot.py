@@ -500,12 +500,21 @@ def plot_umap_clusters(
     if ground_truth_labels is not None:
         ax2 = axes[1]
         gt_categories = sorted(set(ground_truth_labels))
+        # Default palette covers both the old VTOL experiment labels and
+        # the DeepPatent2 platform labels without hardcoding.
         _gt_colors = {
-            "shrouded":   "#2196F3",  # blue
-            "open_rotor": "#FF5722",  # orange-red
-            "unknown":    "#9E9E9E",  # grey
+            "shrouded":                        "#2196F3",
+            "open_rotor":                      "#FF5722",
+            "UAV / Drone":                     "#1565C0",
+            "VTOL / Advanced Air Mobility":    "#E65100",
+            "Other":                           "#9E9E9E",
+            "unknown":                         "#9E9E9E",
         }
-        gt_pal = {c: _gt_colors.get(c, "#9E9E9E") for c in gt_categories}
+        _fallback = sns.color_palette("tab10", n_colors=len(gt_categories))
+        gt_pal = {
+            c: _gt_colors.get(c, _fallback[i % len(_fallback)])
+            for i, c in enumerate(gt_categories)
+        }
 
         gt_df = pd.DataFrame({
             "UMAP-1":    points_2d[:, 0],
