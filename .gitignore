@@ -227,3 +227,7 @@ sidequests/CPC_Analysis.xlsx
 .gitignore
 .gitignore
 sidequests/CPCTitleList.zip
+
+# DeepPatent2 pipeline — generated outputs and cached data
+Deepatent2_Pipeline/outputs/
+Deepatent2_Pipeline/DeepPatent2_DataSet_analyst/data/
