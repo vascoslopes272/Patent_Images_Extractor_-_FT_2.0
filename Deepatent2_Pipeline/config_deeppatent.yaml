@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────
+#  DeepPatent2 Pipeline — Central Configuration
+# ─────────────────────────────────────────────────────────────
+
+# ── Dataset Paths ──────────────────────────────────────────────────────────────
+paths:
+  images_root: "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2"
+  json_labels: "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2/Json_Files"
+  outputs:     "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent_Images_Extractor_&_FT_2.0/Deepatent2_Pipeline/outputs"
+
+# ── Dataset Structure ──────────────────────────────────────────────────────────
+# Each year folder may use a different subdirectory for the Original images.
+# After extracting all tar.gz archives, the layout should be:
+#   2007–2019 : DeepPatent2/{year}/Original/*.png
+#   2019part3 : DeepPatent2/2019part3/Original/*.png
+#   2020      : DeepPatent2/2020/Original_2020/Original/*.png
+#
+# Add or remove year keys here as you extract archives.
+dataset:
+  year_image_subdirs:
+    "2007":      "Original"
+    "2008":      "Original"
+    "2009":      "Original"
+    "2010":      "Original"
+    "2011":      "Original"
+    "2012":      "Original"
+    "2013":      "Original"
+    "2014":      "Original"
+    "2015":      "Original"
+    "2016":      "Original"
+    "2017":      "Original"
+    "2018":      "Original"
+    "2019":      "Original"
+    "2019part3": "Original"
+    "2020":      "Original_2020/Original"
+
+  # JSON label files in json_labels/ directory.
+  # Format: {year_key} → filename (without directory).
+  # 2007 uses a segmentation JSON instead of the standard design JSON.
+  year_json_files:
+    "2007":      "segmentation_2007.json"
+    "2008":      "design2008.json"
+    "2009":      "design2009.json"
+    "2010":      "design2010.json"
+    "2011":      "design2011.json"
+    "2012":      "design2012.json"
+    "2013":      "design2013.json"
+    "2014":      "design2014.json"
+    "2015":      "design2015.json"
+    "2016":      "design2016.json"
+    "2017":      "design2017.json"
+    "2018":      "design2018.json"
+    "2019":      "design2019.json"
+    "2019part3": "design2019part3.json"
+    "2020":      "design2020.json"
+
+  # Set to null to use all extracted years; or provide a list to restrict.
+  # Example: ["2019part3", "2020"]
+  active_years: null
+
+  # Filter to only images whose patent matches these platform architectures.
+  # Labels come from categories_refactored.py → PLATFORM_ARCHITECTURES keys.
+  # Set to null to include all platforms.
+  active_platforms:
+    - "UAV / Drone"
+    - "VTOL / Advanced Air Mobility"
+
+  # Reservoir-sample N images for fast experimentation (null = use all).
+  max_samples: null
+  sample_seed: 42
+
+# ── DINOv2 Model ──────────────────────────────────────────────────────────────
+dinov2:
+  model_name: "facebook/dinov2-large"   # 1024-d CLS token
+  device:     "cuda:1"
+  batch_size: 32                         # increase if GPU memory allows
+
+# ── Analysis Hyperparameters ──────────────────────────────────────────────────
+analysis:
+  pca_n_components:           100   # adjust after inspecting the scree plot
+  hdbscan_min_cluster_size:   15    # ~0.5% of 2019part3+2020 combined
+  hdbscan_min_samples:        5
+  hdbscan_cluster_selection:  "leaf"
+  knn_k:                      9     # neighbors shown in KNN verification grid
+
+# ── Output Files ──────────────────────────────────────────────────────────────
+outputs:
+  excel_filename: "deeppatent_analysis_matrix.xlsx"
