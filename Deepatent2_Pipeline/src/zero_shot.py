@@ -40,6 +40,7 @@ PUBLIC API
     safe_save_plot(fig, path)   → Path
 """
 
+import re
 import time
 import warnings
 from collections import defaultdict
@@ -84,8 +85,17 @@ def collect_image_paths(image_dir: Path) -> list[Path]:
 
 
 def patent_id_from_path(path: Path) -> str:
-    """Extract patent ID from filename stem (e.g. US2022267016A1_SHR_... → US2022267016A1)."""
-    return path.name.split("_")[0]
+    """Extract patent ID from filename stem.
+
+    Handles two formats automatically:
+      DeepPatent2  USD0695674-20131217-D00001.png  →  USD0695674-20131217
+      VTOL dataset US2022267016A1_SHR_p001.png     →  US2022267016A1
+    """
+    stem = Path(path).stem                         # strip .png
+    m    = re.match(r"^(.+?)-D\d{5}$", stem)      # DeepPatent2 pattern
+    if m:
+        return m.group(1)
+    return stem.split("_")[0]                      # VTOL / legacy pattern
 
 
 def category_from_path(path: Path) -> str:
@@ -762,7 +772,7 @@ def plot_reduction_comparison(
     print(f"PCA  : {n_pca} clusters, {n_noise_pca} noise  ({var_cap:.1f}% variance in {n_comp}d)")
 
     # ── Plot ──────────────────────────────────────────────────────────────
-    fig, axes = plt.subplots(1, 3, figsize=(21, 7))
+    fig, axes = plt.subplots(1, 3, figsize=(24, 9))
 
     def _scatter(ax, labels, title):
         unique  = sorted(set(labels))
@@ -770,44 +780,70 @@ def plot_reduction_comparison(
         palette = sns.color_palette("tab10", n_colors=max(n_real, 1))
         cmap, ci = {}, 0
         for lbl in unique:
-            cmap[lbl] = (0.55, 0.55, 0.55) if lbl == -1 else palette[ci]
+            cmap[lbl] = (0.72, 0.72, 0.72) if lbl == -1 else palette[ci]
             if lbl >= 0:
                 ci += 1
-        colors = [cmap[l] for l in labels]
-        ax.scatter(points_2d[:, 0], points_2d[:, 1],
-                   c=colors, s=15, alpha=0.7, edgecolors="none")
-        ax.set_title(title, fontsize=11, fontweight="bold")
-        ax.set_xlabel("UMAP-1"); ax.set_ylabel("UMAP-2")
-        ax.grid(alpha=0.2)
-        # Legend patches
+
+        # Draw noise points first so clusters render on top
+        noise_mask   = np.array(labels) == -1
+        cluster_mask = ~noise_mask
+        if noise_mask.any():
+            ax.scatter(points_2d[noise_mask, 0], points_2d[noise_mask, 1],
+                       c=[cmap[-1]], s=45, alpha=0.45,
+                       edgecolors="white", linewidths=0.3, zorder=1)
+        if cluster_mask.any():
+            ax.scatter(points_2d[cluster_mask, 0], points_2d[cluster_mask, 1],
+                       c=[cmap[l] for l in np.array(labels)[cluster_mask]],
+                       s=90, alpha=0.88,
+                       edgecolors="white", linewidths=0.5, zorder=2)
+
+        ax.set_title(title, fontsize=13, fontweight="bold", pad=10)
+        ax.set_xlabel("UMAP-1", fontsize=12)
+        ax.set_ylabel("UMAP-2", fontsize=12)
+        ax.tick_params(labelsize=10)
+        ax.grid(alpha=0.25, linewidth=0.6)
+
+        # Legend: show count per cluster
         from matplotlib.patches import Patch
+        label_counts = {l: int(np.sum(np.array(labels) == l)) for l in unique}
         handles = [
-            Patch(color=cmap[l], label="Noise" if l == -1 else f"C{l}")
-            for l in unique[:12]   # cap at 12 to keep legend readable
+            Patch(
+                color=cmap[l],
+                label=f"Noise  (n={label_counts[l]})" if l == -1
+                      else f"Cluster {l}  (n={label_counts[l]})",
+            )
+            for l in unique[:14]
         ]
-        ax.legend(handles=handles, fontsize=7, ncol=2,
-                  loc="upper right", framealpha=0.8)
+        ax.legend(handles=handles, fontsize=10, loc="upper right",
+                  framealpha=0.9, edgecolor="0.7", borderpad=0.7)
 
     _scatter(axes[0], labels_raw,
-             f"Raw L2-norm → HDBSCAN\n{n_raw} clusters  {n_noise_raw} noise")
+             f"Raw L2-norm → HDBSCAN\n{n_raw} cluster(s)   {n_noise_raw} noise")
     _scatter(axes[1], labels_pca,
-             f"PCA-{n_comp}d → HDBSCAN\n{n_pca} clusters  {n_noise_pca} noise")
+             f"PCA-{n_comp}d → HDBSCAN\n{n_pca} cluster(s)   {n_noise_pca} noise")
 
     # Scree panel
     ax3 = axes[2]
     ax3.plot(range(1, len(cumvar) + 1), cumvar * 100,
-             linewidth=1.5, color="#1565C0")
-    ax3.axhline(90, color="orange", linestyle="--", linewidth=1, label="90% var")
-    ax3.axhline(95, color="red",    linestyle="--", linewidth=1, label="95% var")
-    ax3.axvline(n_comp, color="green", linestyle=":", linewidth=1.5,
-                label=f"PCA n={n_comp}  ({var_cap:.1f}%)")
-    ax3.set_xlabel("PCA components"); ax3.set_ylabel("Cumulative variance (%)")
-    ax3.set_title("PCA Scree Curve", fontsize=11, fontweight="bold")
-    ax3.legend(fontsize=9); ax3.grid(alpha=0.3)
+             linewidth=2.5, color="#1565C0")
+    ax3.axhline(90, color="orange", linestyle="--", linewidth=1.8,
+                label="90% variance")
+    ax3.axhline(95, color="red",    linestyle="--", linewidth=1.8,
+                label="95% variance")
+    ax3.axvline(n_comp, color="#2E7D32", linestyle=":", linewidth=2.2,
+                label=f"n={n_comp}  ({var_cap:.1f}% captured)")
+    ax3.set_xlabel("Number of PCA components", fontsize=12)
+    ax3.set_ylabel("Cumulative explained variance (%)", fontsize=12)
+    ax3.set_title("PCA Scree Curve", fontsize=13, fontweight="bold", pad=10)
+    ax3.tick_params(labelsize=10)
+    ax3.legend(fontsize=11, framealpha=0.9, edgecolor="0.7")
+    ax3.grid(alpha=0.3, linewidth=0.6)
 
-    fig.suptitle("Dimensionality Reduction Strategy Comparison\n"
-                 "(UMAP projection shared — only cluster colours differ)",
-                 fontsize=13, fontweight="bold")
+    fig.suptitle(
+        "Dimensionality Reduction Strategy Comparison\n"
+        "UMAP projection is shared — only cluster colour assignments differ",
+        fontsize=15, fontweight="bold", y=1.01,
+    )
     plt.tight_layout()
     return fig
 
