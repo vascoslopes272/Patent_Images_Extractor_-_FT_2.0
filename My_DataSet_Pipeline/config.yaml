@@ -4,13 +4,13 @@
 
 # ── Paths (all local, not committed to git) ──
 paths:
-  excel: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1627__dataset_26_05_26.xlsx"
-  crops: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_Raw_Crops"                         # YOLO output
-  processed: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_Processed"                 # resized + padded
-  reviewed:  "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_reviewed"                  # human-approved
-  logs:       "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/1627_Patents_logs"
-  experiment: "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/Shrouded vs Openrotor"
-  final:      "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Drive_files_to_syncronize/3 - Images Processing & DataSets/1627/Shrouded vs Openrotor/Images Processed"  # final output for training
+  excel: "/mnt/storage_11tb/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1627__dataset_26_05_26.xlsx"
+  crops: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_Raw_Crops"                         # YOLO output
+  processed: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_Processed"                 # resized + padded
+  reviewed:  "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_reviewed"                  # human-approved
+  logs:       "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_logs"
+  experiment: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/Shrouded vs Openrotor"
+  final:      "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/Shrouded vs Openrotor/Images Processed"  # final output for training
   # review_meta.json and review_export.xlsx are written to paths.experiment (not paths.logs)
   # crop_index.json and extraction_status.xlsx stay in paths.logs (shared, all 1616 patents)
 
