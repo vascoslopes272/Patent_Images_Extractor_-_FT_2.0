@@ -4,9 +4,11 @@
 
 # ── Dataset Paths ──────────────────────────────────────────────────────────────
 paths:
-  images_root: "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2"
-  json_labels: "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2/Json_Files"
-  outputs:     "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent_Images_Extractor_&_FT_2.0/Deepatent2_Pipeline/outputs"
+  images_root:            "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2"
+  # Set use_categorized_layout: true (below) to load from here instead:
+  images_categorized_root: "/mnt/storage_11tb/Drive_files_to_syncronize/Aicraft related Images"
+  json_labels:            "/mnt/storage_11tb/Drive_files_to_syncronize/DeepPatent2/Json_Files"
+  outputs:                "/home/vasco/Vasco Workspace/Tese_Vasco_Lnx/Patent_Images_Extractor_&_FT_2.0/Deepatent2_Pipeline/outputs"
 
 # ── Dataset Structure ──────────────────────────────────────────────────────────
 # Each year folder may use a different subdirectory for the Original images.
@@ -18,17 +20,17 @@ paths:
 # Add or remove year keys here as you extract archives.
 dataset:
   year_image_subdirs:
-    "2007":      "Original"
-    "2008":      "Original"
-    "2009":      "Original"
+    "2007":      "Original/2007/Original"
+    "2008":      "Original/2008/Original"
+    "2009":      "Original/2009/Original"
     "2010":      "Original"
     "2011":      "Original"
-    "2012":      "Original"
+    "2012":      "Original_2012/Original"
     "2013":      "Original"
-    "2014":      "Original"
-    "2015":      "Original"
+    "2014":      "Original_2014/Original"
+    "2015":      "Original_2015/Original"
     "2016":      "Original"
-    "2017":      "Original"
+    "2017":      "Original_2017/Original"
     "2018":      "Original"
     "2019":      "Original"
     "2019part3": "Original"
@@ -38,7 +40,7 @@ dataset:
   # Format: {year_key} → filename (without directory).
   # 2007 uses a segmentation JSON instead of the standard design JSON.
   year_json_files:
-    "2007":      "segmentation_2007.json"
+    "2007":      "design_2007.json"
     "2008":      "design2008.json"
     "2009":      "design2009.json"
     "2010":      "design2010.json"
@@ -54,6 +56,10 @@ dataset:
     "2019part3": "design2019part3.json"
     "2020":      "design2020.json"
 
+  # Set to true after running reorganize_patent_images.py to load from
+  # images_categorized_root instead of the year-based images_root layout.
+  use_categorized_layout: true
+
   # Set to null to use all extracted years; or provide a list to restrict.
   # Example: ["2019part3", "2020"]
   active_years: null
@@ -62,6 +68,8 @@ dataset:
   # Labels come from categories_refactored.py → PLATFORM_ARCHITECTURES keys.
   # Set to null to include all platforms.
   active_platforms:
+    - "Fixed-Wing Aircraft"
+    - "Rotary-Wing / Helicopter"
     - "UAV / Drone"
     - "VTOL / Advanced Air Mobility"
 

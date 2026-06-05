@@ -8,8 +8,8 @@ Each patent can match one platform + multiple subsystems.
 
 PLATFORM_ARCHITECTURES = {
     "Fixed-Wing Aircraft": [
-        # Base terms
-        "aircraft", "airplane", "aeroplane", "plane", "jet", "airliner",
+        # Base terms — removed "plane" (matches any flat surface) and "jet" (matches ink-jet, jet-ski)
+        "aircraft", "airplane", "aeroplane", "airliner",
         "fixed wing", "fixed-wing",
         # Military variants
         "fighter", "bomber", "interceptor", "reconnaissance", "transport aircraft",
@@ -33,8 +33,8 @@ PLATFORM_ARCHITECTURES = {
     ],
 
     "Rotary-Wing / Helicopter": [
-        # Base terms
-        "helicopter", "rotorcraft", "chopper", "heli",
+        # Base terms — removed "chopper" (matches kitchen choppers/food processors)
+        "helicopter", "rotorcraft", "heli",
         "autogyro", "gyroplane", "gyrocopter", "gyromotor",
         # Helicopter types
         "light helicopter", "heavy helicopter", "utility helicopter",
@@ -47,8 +47,8 @@ PLATFORM_ARCHITECTURES = {
         # Specific designs
         "tiltrotor", "convertiplane", "compound helicopter",
         "coaxial helicopter", "tandem rotor", "single rotor",
-        # Technical features
-        "vertical takeoff", "hover", "hovering aircraft",
+        # Technical features — removed "hover" standalone (matches hoverboards, microwave hover covers)
+        "vertical takeoff", "hovering aircraft",
         "air taxi capability", "autonomous helicopter",
     ],
 
@@ -88,24 +88,24 @@ PLATFORM_ARCHITECTURES = {
         # Personal/advanced
         "flying car", "personal air vehicle", "pav", "personal air transport",
         "advanced air mobility", "aam", "next-gen air transport",
-        # Electric/alternative
-        "electric aircraft", "battery-electric", "hybrid-electric",
-        "electric propulsion", "fuel cell aircraft",
+        # Electric/alternative — removed "battery-electric"/"hybrid-electric" (match EVs/hybrid cars),
+        # "electric propulsion" (matches industrial motors), "advanced vehicle"/"innovative transport" (too generic)
+        "electric aircraft", "fuel cell aircraft",
         # Specific concepts
         "air taxi service", "aerial taxi", "autonomous air vehicle",
         "passenger drone", "electric copter", "electric helicopter",
         "tiltwing", "tiltwing aircraft", "tilt-rotor",
-        "distributed electric", "distributed propulsion",
+        "distributed electric propulsion", "distributed propulsion aircraft",
         # Emerging terms
-        "advanced vehicle", "next generation aircraft", "future aircraft",
-        "innovative transport", "sustainable aviation", "zero-emission aircraft",
+        "next generation aircraft", "future aircraft",
+        "sustainable aviation", "zero-emission aircraft",
     ],
 
     "Hybrid / Special Configuration": [
-        # Combined/unique architectures
+        # Combined/unique architectures — removed "amphibian" standalone (matches amphibious vehicles/cars)
         "hybrid architecture", "hybrid platform", "convertible aircraft",
         "morphing aircraft", "variable geometry aircraft",
-        "amphibious aircraft", "amphibian",
+        "amphibious aircraft", "amphibian aircraft",
     ],
 }
 
@@ -344,6 +344,16 @@ def get_all_keywords_flat():
     for category, keywords in TECHNICAL_SUBSYSTEMS.items():
         all_keywords[category] = keywords
     return all_keywords
+
+
+def safe_folder_name(category: str) -> str:
+    """Convert a category name to a filesystem-safe folder name.
+
+    Replaces '/' (Linux path separator) with ' - ' so folder names stay flat.
+    e.g. 'UAV / Drone' → 'UAV - Drone'
+    """
+    return category.replace("/", "-").replace("  ", " ").strip()
+
 
 # Combined for compatibility
 CATEGORIES = {**PLATFORM_ARCHITECTURES, **TECHNICAL_SUBSYSTEMS}

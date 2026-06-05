@@ -41,18 +41,18 @@ from pathlib import Path
 
 import pandas as pd
 
-# ── Load keyword taxonomy from DeepPatent2_DataSet_analyst ───────────────────
-# The categories_refactored module lives in a sibling directory.  We inject it
-# into sys.path at import time so callers do not need to configure PYTHONPATH.
-_ANALYST_DIR = Path(__file__).resolve().parent.parent / "DeepPatent2_DataSet_analyst"
+# categories_refactored now lives in src/ alongside this file
+_ANALYST_DIR = Path(__file__).resolve().parent
 if str(_ANALYST_DIR) not in sys.path:
     sys.path.insert(0, str(_ANALYST_DIR))
 
 try:
-    from categories_refactored import PLATFORM_ARCHITECTURES  # type: ignore
+    from categories_refactored import PLATFORM_ARCHITECTURES, safe_folder_name  # type: ignore
     _HAVE_TAXONOMY = True
 except ImportError:
     PLATFORM_ARCHITECTURES = {}
+    def safe_folder_name(name: str) -> str:  # type: ignore[misc]
+        return name.replace("/", "-").replace("  ", " ").strip()
     _HAVE_TAXONOMY = False
 
 
@@ -134,6 +134,8 @@ class DeepPatent2Dataset:
     Key config keys used
     --------------------
     paths.images_root, paths.json_labels
+    paths.images_categorized_root  (used when use_categorized_layout=true)
+    dataset.use_categorized_layout (bool, default False)
     dataset.year_image_subdirs, dataset.year_json_files
     dataset.active_years          (None → auto-detect from filesystem)
     dataset.active_platforms      (None → all; e.g. ["UAV / Drone", "VTOL / Advanced Air Mobility"])
@@ -142,14 +144,21 @@ class DeepPatent2Dataset:
     """
 
     def __init__(self, cfg: dict):
-        self._images_root    = Path(cfg["paths"]["images_root"])
-        self._json_dir       = Path(cfg["paths"]["json_labels"])
-        self._year_subdirs   = cfg["dataset"]["year_image_subdirs"]
-        self._year_json_map  = cfg["dataset"]["year_json_files"]
-        self._active_years   = cfg["dataset"].get("active_years")
-        self._active_plats   = cfg["dataset"].get("active_platforms")  # None → all
-        self._max_samples    = cfg["dataset"].get("max_samples")
-        self._sample_seed    = cfg["dataset"].get("sample_seed", 42)
+        self._images_root        = Path(cfg["paths"]["images_root"])
+        self._categorized_root   = Path(
+            cfg["paths"].get(
+                "images_categorized_root",
+                "/mnt/storage_11tb/Drive_files_to_syncronize/Aicraft related Images",
+            )
+        )
+        self._use_categorized    = bool(cfg["dataset"].get("use_categorized_layout", False))
+        self._json_dir           = Path(cfg["paths"]["json_labels"])
+        self._year_subdirs       = cfg["dataset"]["year_image_subdirs"]
+        self._year_json_map      = cfg["dataset"]["year_json_files"]
+        self._active_years       = cfg["dataset"].get("active_years")
+        self._active_plats       = cfg["dataset"].get("active_platforms")  # None → all
+        self._max_samples        = cfg["dataset"].get("max_samples")
+        self._sample_seed        = cfg["dataset"].get("sample_seed", 42)
 
         self._image_index:    dict[str, Path]  = {}  # filename → path
         self._meta_index:     dict[str, list]  = {}  # figure_file → [annotations]
@@ -157,7 +166,10 @@ class DeepPatent2Dataset:
         self._patent_platform: dict[str, str]  = {}  # patentID → platform label
         self._filtered_names: set[str]         = set()  # figure_filenames to keep
 
-        self._build_image_index()
+        if self._use_categorized:
+            self._build_image_index_categorized()
+        else:
+            self._build_image_index()
         self._build_metadata_index()
         self._classify_platforms()
         self._apply_platform_filter()
@@ -185,6 +197,39 @@ class DeepPatent2Dataset:
                 total += 1
         print(f"[DeepPatent2Dataset] Indexed {total} images across "
               f"{len(years)} year(s): {', '.join(years)}")
+
+    def _build_image_index_categorized(self) -> None:
+        """Scan the flat category layout produced by reorganize_patent_images.py.
+
+        Layout: images_categorized_root/{safe_folder_name(category)}/*.png
+        Folder names use safe_folder_name() (e.g. 'UAV - Drone', not 'UAV / Drone').
+        JSON files stay in their original location and are loaded as usual.
+        """
+        if not self._categorized_root.is_dir():
+            raise FileNotFoundError(
+                f"Categorized image root not found: {self._categorized_root}\n"
+                "Run reorganize_patent_images.py first, or set "
+                "use_categorized_layout: false in config."
+            )
+        # Only scan platform architecture folders (not subsystem or Other)
+        valid_folder_names = {
+            safe_folder_name(cat) for cat in PLATFORM_ARCHITECTURES
+        }
+        total = 0
+        categories_found = []
+        for category_dir in sorted(self._categorized_root.iterdir()):
+            if not category_dir.is_dir():
+                continue
+            if category_dir.name not in valid_folder_names:
+                continue
+            found = list(category_dir.glob("*.png"))
+            for p in found:
+                self._image_index[p.name] = p
+            if found:
+                categories_found.append(f"{category_dir.name}({len(found)})")
+            total += len(found)
+        print(f"[DeepPatent2Dataset] Categorized layout — indexed {total} images "
+              f"across {len(categories_found)} categories")
 
     def _build_metadata_index(self) -> None:
         """Load JSON annotation files and build figure_file → [annotations] map.
