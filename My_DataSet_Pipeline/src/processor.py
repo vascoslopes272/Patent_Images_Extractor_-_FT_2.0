@@ -164,7 +164,11 @@ def process_crops(crop_paths: list, cfg: dict) -> list:
 # Organize processed images into the final folder with CPC codes in filenames
 # ---------------------------------------------------------------------------
 
-_CAT_ABBR = {"shrouded": "SHR", "open_rotor": "OPN"}
+_CAT_ABBR = {
+    "shrouded": "SHR", "open_rotor": "OPN",
+    "compound_helicopter": "CMP", "ducted_fan_vectored_thrust": "DFV",
+    "lift_cruise": "LFC", "multirotor": "MLT",
+}
 
 
 def _build_cpc_map(cfg: dict) -> dict:
@@ -189,13 +193,32 @@ def _build_cpc_map(cfg: dict) -> dict:
 
 
 def _build_category_map(cfg: dict) -> dict:
-    """Return {record_id: category} from selected_patents.csv in the experiment folder."""
+    """Return {record_id: category}, preferring corrections made in 02_review.ipynb.
+
+    Base mapping comes from selected_patents.csv (written by 00_patent_filter.ipynb).
+    Any patent with an "architecture_class" override recorded in review_meta.json
+    (the reviewer flagged the assigned class as wrong and picked a different one)
+    uses that corrected class instead — review_meta.json is the source of truth
+    once a human has looked at the actual figure.
+    """
     csv_path = Path(cfg["paths"]["experiment"]) / "selected_patents.csv"
     if not csv_path.exists():
         return {}
     df = pd.read_csv(csv_path, dtype={"Record Number": str})
-    return {str(r).strip().upper(): str(c).strip()
-            for r, c in zip(df["Record Number"], df["category"])}
+    cat_map = {str(r).strip().upper(): str(c).strip()
+               for r, c in zip(df["Record Number"], df["category"])}
+
+    meta_path = Path(cfg["paths"]["logs"]) / "review_meta.json"
+    if meta_path.exists():
+        import json
+        with open(meta_path) as f:
+            meta = json.load(f)
+        for pid, pdata in meta.items():
+            corrected = pdata.get("architecture_class")
+            if corrected and corrected != "unsure":
+                cat_map[pid.strip().upper()] = corrected
+
+    return cat_map
 
 
 def organize_processed(cfg: dict) -> list:

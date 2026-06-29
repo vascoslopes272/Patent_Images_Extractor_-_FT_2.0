@@ -4,32 +4,32 @@
 
 # ── Paths (all local, not committed to git) ──
 paths:
-  excel: "/mnt/storage_11tb/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1627__dataset_26_05_26.xlsx"
-  crops: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_Raw_Crops"                         # YOLO output
-  processed: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_Processed"                 # resized + padded
-  reviewed:  "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_reviewed"                  # human-approved
-  logs:       "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/1627_Patents_logs"
-  experiment: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/Shrouded vs Openrotor"
-  final:      "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Processed Images DataSets & Model Outputs/1627/Shrouded vs Openrotor/Images Processed"  # final output for training
+  # Master PatSeer export — has real PDF Link hyperlinks (used by 01_extraction).
+  excel: "/mnt/storage_11tb/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/1639__dataset_08_06_26.xlsx"
+  # Curated 100-patent / 4-architecture set — has "Architecture Category" but the
+  # "PDF Link" column is a placeholder with no real hyperlinks. 00_patent_filter.ipynb
+  # merges this with `excel` above (by Record Number) to get category + real pdf_url.
+  architecture_excel: "/mnt/storage_11tb/Drive_files_to_syncronize/2 - Patente & Validation/3 -Raw_Patent_Exports_PatSeer_&Gold_Standard/Custom_eVTOL_Dataset_128.xlsx"
+  crops: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2/data/1639_Patents_Raw_Crops"                         # YOLO output
+  processed: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2/data/1639_Patents_Processed"                 # resized + padded
+  reviewed:  "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2/data/1639_Patents_reviewed"                  # human-approved
+  logs:       "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2/data/1639_Patents_logs"
+  experiment: "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2"
+  final:      "/mnt/storage_11tb/Drive_files_to_syncronize/3 - Images DataSets & Labelling Outputs/1639_DS/preliminary analysis v2/data/images"  # final output for training
   # review_meta.json and review_export.xlsx are written to paths.experiment (not paths.logs)
-  # crop_index.json and extraction_status.xlsx stay in paths.logs (shared, all 1616 patents)
+  # crop_index.json and extraction_status.xlsx stay in paths.logs (shared, all patents in this run)
 
 # ── Subset Selection ──
 # mode options: "all" | "n_first" | "filter" | "selected"
 #   "selected" → reads logs/selected_patents.json (written by 00_patent_filter.ipynb)
 subset:
-  mode: "filter"        # change this to switch what gets processed
+  mode: "selected"   # v2: 00_patent_filter.ipynb writes the 98 matched curated patents here
   n_first: 10              # used when mode = "n_first"
-  filters:                  # used when mode = "filter"
+  filters:                  # used when mode = "filter" (not used in v2 — kept for reference)
     record_type: null        # e.g. "Patent" | null = no filter
     legal_status: null       # "ALIVE" | "DEAD" | null
     tech_sub_domain: null    # e.g. "TRANSPORT" | null
-    cpc_first:               # Shrouded vs Open Rotor experiment — all 5 CPC codes
-      - "B64C27/20"          # shrouded
-      - "B64C11/001"         # shrouded
-      - "B64U50/14"          # shrouded
-      - "B64C29/0033"        # open_rotor
-      - "B64C29/0025"        # open_rotor
+    cpc_first: []
 
 
 
