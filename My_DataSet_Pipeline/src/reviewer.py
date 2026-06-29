@@ -50,6 +50,16 @@ from PIL import Image
 
 _N = lambda pid: str(pid).strip().upper()   # normalize patent ID
 
+# Architecture class options shown in the review UI dropdown (slug → display label).
+# Keys must match the slugs written by 00_patent_filter.ipynb (CATEGORY_SLUGS).
+CATEGORY_LABELS = {
+    "compound_helicopter":        "Compound Helicopter",
+    "ducted_fan_vectored_thrust": "Ducted Fan Vectored Thrust",
+    "lift_cruise":                "Lift + Cruise",
+    "multirotor":                 "Multirotor",
+    "unsure":                     "Unsure / needs discussion",
+}
+
 
 class ReviewUI:
     """
@@ -61,7 +71,8 @@ class ReviewUI:
     Every action persists to review_meta.json immediately (crash-safe).
     """
 
-    def __init__(self, cfg: dict, patent_ids: set | None = None):
+    def __init__(self, cfg: dict, patent_ids: set | None = None,
+                 category_by_patent: dict | None = None):
         self.cfg       = cfg
         self.crops_dir = Path(cfg["paths"]["crops"])
         self.meta_path = Path(cfg["paths"]["logs"]) / "review_meta.json"
@@ -71,6 +82,15 @@ class ReviewUI:
         self._allowed_ids = (
             {str(p).strip().upper() for p in patent_ids} if patent_ids else None
         )
+
+        # Architecture class assigned in the Excel (from selected_patents.csv),
+        # keyed by normalised patent ID. Used as the dropdown default and shown
+        # in the header so the reviewer can flag/correct a wrong assignment.
+        self._category_by_patent = (
+            {_N(pid): str(cat).strip() for pid, cat in category_by_patent.items()}
+            if category_by_patent else {}
+        )
+        self._syncing_class = False   # guards the dropdown's own value-sync from re-triggering persistence
 
         self._patents     = self._discover_patents()
         self._thumb_cache = {}
@@ -121,6 +141,7 @@ class ReviewUI:
             "arch_selections":     {},           # pid_n → {slot: set of str(Path)}
             "needs_split":         set(),        # (pid_n, fname)
             "notes":               {},           # pid_n → str
+            "architecture_class":  {},           # pid_n → corrected slug (only set when ≠ assigned)
             "saved":               False,
             "cards":               [],
             "totals":              {"total": 0, "approved": 0, "rejected": 0},
@@ -143,6 +164,10 @@ class ReviewUI:
 
             if pdata.get("note"):
                 s["notes"][pid_n] = pdata["note"]
+
+            corrected = pdata.get("architecture_class")
+            if corrected and corrected != self._category_by_patent.get(pid_n):
+                s["architecture_class"][pid_n] = corrected
 
             main_fname = pdata.get("main_image")
             if main_fname:
@@ -221,6 +246,9 @@ class ReviewUI:
             pdata["architecture_stage"] = self._arch_stage(pid_n)
             pdata["note"]               = self._s["notes"].get(pid_n, "")
 
+            pdata["architecture_class_assigned"] = self._assigned_class(pid_n)
+            pdata["architecture_class"]          = self._current_class(pid_n)
+
             main_src = self._s["main_image_by_patent"].get(pid_n, "")
             pdata["main_image"] = Path(main_src).name if main_src else None
 
@@ -281,6 +309,14 @@ class ReviewUI:
     def _arch_stage(self, pid_n: str) -> int:
         return int(self._s["architecture_stages"].get(pid_n, 0))
 
+    def _assigned_class(self, pid_n: str) -> str:
+        """Architecture class from the Excel (selected_patents.csv), or 'unknown' if absent."""
+        return self._category_by_patent.get(pid_n, "unknown")
+
+    def _current_class(self, pid_n: str) -> str:
+        """Reviewer's current choice — the correction if one was made, else the assigned class."""
+        return self._s["architecture_class"].get(pid_n) or self._assigned_class(pid_n)
+
     # ── Thumbnail helper ──────────────────────────────────────────────────
 
     def _thumb_bytes(self, image_path: Path) -> bytes:
@@ -333,6 +369,16 @@ class ReviewUI:
                                       layout=widgets.Layout(width="340px"))
         self._w_go     = widgets.Button(description="Go / Search", button_style="primary")
 
+        # Architecture class — assigned-from-Excel label + correction dropdown
+        self._w_class_label = widgets.HTML()
+        self._w_class_dd    = widgets.Dropdown(
+            options=[(label, slug) for slug, label in CATEGORY_LABELS.items()],
+            description="Architecture:",
+            style={"description_width": "initial"},
+            layout=widgets.Layout(width="320px"),
+        )
+        self._w_class_reset = widgets.Button(description="Reset to assigned", button_style="")
+
         # Patent-level actions
         self._w_disapprove = widgets.Button(description="Disapprove Patent", button_style="danger")
         self._w_reapprove  = widgets.Button(description="Reapprove Patent",  button_style="success")
@@ -381,6 +427,9 @@ class ReviewUI:
         self._w_go.on_click(self._search)
         self._w_search.on_submit(self._search)
 
+        self._w_class_dd.observe(self._on_class_change, names="value")
+        self._w_class_reset.on_click(self._on_class_reset)
+
         self._w_disapprove.on_click(self._disapprove)
         self._w_reapprove.on_click(self._reapprove)
         self._w_duplicate.on_click(self._mark_dup)
@@ -398,6 +447,7 @@ class ReviewUI:
 
     def _assemble_layout(self) -> widgets.Widget:
         row_search    = widgets.HBox([self._w_search, self._w_go])
+        row_class     = widgets.HBox([self._w_class_label, self._w_class_dd, self._w_class_reset])
         row_decisions = widgets.HBox([self._w_disapprove, self._w_reapprove, self._w_duplicate])
         row_img       = widgets.HBox([self._w_needs_split, self._w_set_main])
         row_arch      = widgets.HBox([self._w_arch_toggle, self._w_save_arch1, self._w_save_arch2])
@@ -406,6 +456,7 @@ class ReviewUI:
             self._w_style,
             row_search,
             self._w_info,
+            row_class,
             row_decisions,
             self._w_dup_row,
             row_img,
@@ -461,6 +512,19 @@ class ReviewUI:
         note_val = self._s["notes"].get(pid_n, "")
         if self._w_note.value != note_val:
             self._w_note.value = note_val
+
+        # Sync architecture class dropdown + label (guard against re-triggering persist)
+        assigned = self._assigned_class(pid_n)
+        current  = self._current_class(pid_n)
+        corrected = current != assigned
+        self._w_class_label.value = (
+            f"<b>Assigned (Excel):</b> {CATEGORY_LABELS.get(assigned, assigned)}"
+            + (" &nbsp;<span style='color:#bf360c;'><b>← CORRECTED</b></span>" if corrected else "")
+        )
+        self._syncing_class = True
+        if self._w_class_dd.value != current:
+            self._w_class_dd.value = current
+        self._syncing_class = False
 
         # Duplicate input row visibility
         if self._is_dup(pid_n):
@@ -833,6 +897,25 @@ class ReviewUI:
         self._s["notes"][self._pid()] = change.get("new", "")
         self._persist()
 
+    def _on_class_change(self, change):
+        if self._syncing_class or change.get("name") != "value":
+            return
+        pid_n    = self._pid()
+        assigned = self._assigned_class(pid_n)
+        new_val  = change.get("new")
+        if new_val == assigned:
+            self._s["architecture_class"].pop(pid_n, None)
+        else:
+            self._s["architecture_class"][pid_n] = new_val
+        self._persist()
+        self._refresh_header()
+
+    def _on_class_reset(self, _=None):
+        pid_n = self._pid()
+        self._s["architecture_class"].pop(pid_n, None)
+        self._persist()
+        self._refresh_header()
+
     # ── Public API ────────────────────────────────────────────────────────
 
     def show(self):
@@ -913,9 +996,14 @@ def export_review_excel(cfg: dict) -> Path:
         n_rejected   = sum(1 for v in images_meta.values() if not v.get("approved"))
         n_needs_split = sum(1 for v in images_meta.values() if v.get("needs_split"))
 
+        assigned_class = pdata.get("architecture_class_assigned", "")
+        final_class    = pdata.get("architecture_class", assigned_class)
         patent_rows.append({
             "patent_id":        patent_id,
             "review_status":    pdata.get("review_status", "PENDING"),
+            "architecture_class_assigned": assigned_class,
+            "architecture_class_final":    final_class,
+            "architecture_corrected":      bool(assigned_class) and final_class != assigned_class,
             "architecture_mode":pdata.get("architecture_mode", 1),
             "is_duplicate":     pdata.get("is_duplicate", False),
             "duplicate_of":     pdata.get("duplicate_of") or "",

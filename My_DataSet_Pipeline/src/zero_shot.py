@@ -79,13 +79,9 @@ def patent_id_from_path(path: Path) -> str:
 
 
 def category_from_path(path: Path) -> str:
-    """Extract class label from filename: *_SHR_* → 'shrouded', *_OPN_* → 'open_rotor'."""
-    name = path.name.upper()
-    if "_SHR_" in name:
-        return "shrouded"
-    if "_OPN_" in name:
-        return "open_rotor"
-    return "unknown"
+    """Extract class label from the parent folder name (organize_processed()
+    writes images to final/<category>/...), e.g. final/multirotor/X.png → 'multirotor'."""
+    return path.parent.name
 
 
 def _unique_path(path: Path) -> Path:
@@ -493,9 +489,17 @@ def plot_umap_clusters(
         _gt_colors = {
             "shrouded":   "#2196F3",  # blue
             "open_rotor": "#FF5722",  # orange-red
+            "compound_helicopter":        "#2196F3",  # blue
+            "ducted_fan_vectored_thrust":  "#FF5722",  # orange-red
+            "lift_cruise":                 "#4CAF50",  # green
+            "multirotor":                  "#9C27B0",  # purple
             "unknown":    "#9E9E9E",  # grey
         }
-        gt_pal = {c: _gt_colors.get(c, "#9E9E9E") for c in gt_categories}
+        _fallback_palette = sns.color_palette("tab10", n_colors=len(gt_categories)).as_hex()
+        gt_pal = {
+            c: _gt_colors.get(c, _fallback_palette[i % len(_fallback_palette)])
+            for i, c in enumerate(gt_categories)
+        }
 
         gt_df = pd.DataFrame({
             "UMAP-1":    points_2d[:, 0],
@@ -509,8 +513,7 @@ def plot_umap_clusters(
             edgecolor="black", linewidth=0.4, ax=ax2,
         )
         ax2.set_title(
-            f"Ground-Truth Labels{suffix}\n"
-            f"(Shrouded vs Open Rotor)",
+            f"Ground-Truth Labels{suffix}",
             fontsize=12, fontweight="bold",
         )
         ax2.set_xlabel("UMAP Dimension 1", fontsize=11)
